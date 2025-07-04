@@ -1,4 +1,4 @@
-package com.training.warehouse.common;
+package com.training.warehouse.common.converter;
 
 import com.training.warehouse.enumeric.SupplierCd;
 
