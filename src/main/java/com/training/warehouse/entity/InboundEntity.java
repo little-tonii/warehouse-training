@@ -2,9 +2,9 @@ package com.training.warehouse.entity;
 
 import java.time.LocalDateTime;
 
-import com.training.warehouse.common.OrderStatusConverter;
-import com.training.warehouse.common.ProductTypeConverter;
-import com.training.warehouse.common.SupplierCdConverter;
+import com.training.warehouse.common.converter.OrderStatusConverter;
+import com.training.warehouse.common.converter.ProductTypeConverter;
+import com.training.warehouse.common.converter.SupplierCdConverter;
 import com.training.warehouse.enumeric.OrderStatus;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.enumeric.SupplierCd;

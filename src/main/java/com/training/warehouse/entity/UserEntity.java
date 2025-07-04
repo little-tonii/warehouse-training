@@ -1,6 +1,12 @@
 package com.training.warehouse.entity;
 
-import com.training.warehouse.common.RoleConverter;
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.training.warehouse.common.converter.RoleConverter;
 import com.training.warehouse.enumeric.Role;
 
 import jakarta.persistence.Column;
@@ -20,7 +26,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
-public class UserEntity extends BaseEntity {
+public class UserEntity extends BaseEntity implements UserDetails{
 
     @Column(unique = true, nullable = false, name = "username")
     private String username;
@@ -37,4 +43,9 @@ public class UserEntity extends BaseEntity {
     @Column(name = "role", nullable = false)
     @Convert(converter = RoleConverter.class)
     private Role role;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of((GrantedAuthority) () -> "ROLE_" + role.name());
+    }
 }

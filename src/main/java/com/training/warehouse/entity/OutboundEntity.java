@@ -2,15 +2,12 @@ package com.training.warehouse.entity;
 
 import java.time.LocalDateTime;
 
-import com.training.warehouse.common.ShippingMethodConverter;
+import com.training.warehouse.common.converter.ShippingMethodConverter;
 import com.training.warehouse.enumeric.ShippingMethod;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
