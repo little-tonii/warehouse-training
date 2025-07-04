@@ -1,10 +1,11 @@
 package com.training.warehouse.entity;
 
+import com.training.warehouse.common.RoleConverter;
+import com.training.warehouse.enumeric.Role;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +34,7 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false, unique = true, name = "email")
     private String email;
 
-    @JoinColumn(name = "role_id", referencedColumnName = "id", nullable = false)
-    @OneToOne(fetch = FetchType.LAZY)
-    private RoleEntity role;
+    @Column(name = "role", nullable = false)
+    @Convert(converter = RoleConverter.class)
+    private Role role;
 }
