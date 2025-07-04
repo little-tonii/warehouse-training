@@ -2,6 +2,7 @@ package com.training.warehouse.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,15 +21,14 @@ public class WebSecurityConfig {
 
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // http.authorizeHttpRequests(configurer ->
-        //         configurer
-        //                 .requestMatchers("/api/auth/**","/swagger-ui/**", "/v3/api-docs/**",
-        //                         "/swagger-resources/**", "/webjars/**", "/docs").permitAll()
-        //                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-        //                 .anyRequest().authenticated()
-        //                 );
         http.csrf(csrf -> csrf.disable());
-        http.sessionManagement(session ->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.authorizeHttpRequests(auth -> auth
+            .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+            .requestMatchers(HttpMethod.PUT, "/api/v1/user").authenticated()
+            .anyRequest().authenticated()
+        );
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

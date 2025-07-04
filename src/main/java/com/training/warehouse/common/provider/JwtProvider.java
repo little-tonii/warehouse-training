@@ -51,7 +51,7 @@ public class JwtProvider {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public String generateAccessToken(Map<String, Object> claims, UserDetails userDetails) {
+    public String generateToken(Map<String, Object> claims, UserDetails userDetails) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userDetails.getUsername())
