@@ -29,7 +29,7 @@ public abstract class BaseEntity {
     private Long id;
 
     @CreationTimestamp
-    @Column(updatable = false, name = "created_at", nullable = true)
+    @Column(updatable = false, name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp()
