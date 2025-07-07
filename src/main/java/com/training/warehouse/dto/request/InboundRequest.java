@@ -15,11 +15,10 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class InboundRequest {
-        private Long id;
-        private String invoice;
-        private ProductType productType;
-        private SupplierCd supplierCd;
-        private LocalDateTime receiveDate;
-        private OrderStatus status;
-        private long quantity;
+    private String invoice;
+    private ProductType productType;
+    private SupplierCd supplierCd;
+    private LocalDateTime receiveDate;
+    private OrderStatus status;
+    private long quantity;
 }

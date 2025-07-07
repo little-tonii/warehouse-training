@@ -19,11 +19,11 @@ public class InboundServiceImpl implements InboundService {
     private final InboundRepository inboundRepository;
 
     @Override
-    public InboundResponse createInbound(InboundRequest dto){
+    public InboundResponse createInbound(InboundRequest dto) {
         InboundEntity entity = new InboundEntity();
         entity.setInvoice(dto.getInvoice());
         entity.setProductType(dto.getProductType());
-        entity.setSupplierCd(dto.getSupplierCd()) ;
+        entity.setSupplierCd(dto.getSupplierCd());
         entity.setReceiveDate(dto.getReceiveDate());
         entity.setStatus(OrderStatus.NOT_EXPORTED);
         entity.setQuantity(dto.getQuantity());
@@ -47,16 +47,19 @@ public class InboundServiceImpl implements InboundService {
         return result;
     }
 
-    public InboundResponse updateInbound(InboundRequest dto){
-        InboundEntity entity = inboundRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("Inbound not found"));
-
-        entity.setId(dto.getId());
+    @Override
+    public InboundResponse updateInbound(Long id, InboundRequest dto) {
+        InboundEntity entity = inboundRepository.findById(id).orElseThrow(() -> new RuntimeException("Inbound not found"));
+        if (entity.getStatus() != OrderStatus.NOT_EXPORTED) {
+            throw new RuntimeException("Cannot update. Inbound status is not editable.");
+        }
         entity.setInvoice(dto.getInvoice());
         entity.setProductType(dto.getProductType());
-        entity.setSupplierCd(dto.getSupplierCd()) ;
+        entity.setSupplierCd(dto.getSupplierCd());
         entity.setReceiveDate(dto.getReceiveDate());
         entity.setStatus(dto.getStatus());
         entity.setQuantity(dto.getQuantity());
+        entity.setUpdatedAt(LocalDateTime.now());
 
         InboundEntity savedEntity = inboundRepository.save(entity);
 
@@ -70,12 +73,15 @@ public class InboundServiceImpl implements InboundService {
         res.setStatus(savedEntity.getStatus());
         res.setCreatedAt(savedEntity.getCreatedAt());
         res.setUpdatedAt(savedEntity.getUpdatedAt());
-
         return res;
     }
 
-    public void deleteInbound (InboundRequest dto){
-        InboundEntity entity = inboundRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("Inbound not found"));
+    @Override
+    public void deleteInbound(Long id) {
+        InboundEntity entity = inboundRepository.findById(id).orElseThrow(() -> new RuntimeException("Inbound not found"));
+        if (entity.getStatus() != OrderStatus.NOT_EXPORTED) {
+            throw new RuntimeException("Cannot delete. Inbound status is not editable.");
+        }
         inboundRepository.delete(entity);
     }
 }
