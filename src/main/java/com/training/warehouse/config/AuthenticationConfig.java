@@ -15,8 +15,8 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.training.warehouse.exception.ExceptionMessage;
-import com.training.warehouse.exception.ExceptionResponse;
+import com.training.warehouse.exception.handler.ExceptionMessage;
+import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.repository.UserRepository;
 
 import lombok.AllArgsConstructor;
@@ -55,7 +55,6 @@ public class AuthenticationConfig {
             response.getWriter().write(objectMapper.writeValueAsString(body));
         };
     }
-
 
     @Bean
     protected AccessDeniedHandler accessDeniedHandler() {

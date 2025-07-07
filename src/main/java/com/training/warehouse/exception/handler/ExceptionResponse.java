@@ -1,4 +1,4 @@
-package com.training.warehouse.exception;
+package com.training.warehouse.exception.handler;
 
 import java.util.List;
 
