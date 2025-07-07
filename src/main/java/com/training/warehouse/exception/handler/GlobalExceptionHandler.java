@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ExceptionResponse.builder()
-                .messages(List.of(ExceptionMessage.UNKNOWN))
+                .messages(List.of(exception.getMessage()))
                 .build());
     }
 
