@@ -17,13 +17,14 @@ public class InboundController {
         return ResponseEntity.ok(inboundService.createInbound(request));
     }
 
-    @PutMapping("/${id}")
+    @PutMapping("/{id}")
     public ResponseEntity<?> updateInbound(@PathVariable Long id,@RequestBody InboundRequest request){
         return ResponseEntity.ok(inboundService.updateInbound(id,request));
     }
 
-    @DeleteMapping("${id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity deleteInbound(@PathVariable Long id){
-        return ResponseEntity.ok().build();
+        inboundService.deleteInbound(id);
+        return ResponseEntity.ok("Deleted successfully");
     }
 }
