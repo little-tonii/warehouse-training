@@ -6,7 +6,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.training.warehouse.filter.JwtAuthenticationFilter;
@@ -18,7 +20,9 @@ import lombok.AllArgsConstructor;
 public class WebSecurityConfig {
  
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
+    private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final AccessDeniedHandler accessDeniedHandler;
+    
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable());
@@ -33,6 +37,10 @@ public class WebSecurityConfig {
             .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
             .requestMatchers(HttpMethod.PUT, "/api/user").authenticated()
             .anyRequest().authenticated()
+        );
+        http.exceptionHandling(ex -> ex
+            .authenticationEntryPoint(authenticationEntryPoint)  
+            .accessDeniedHandler(accessDeniedHandler)
         );
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
