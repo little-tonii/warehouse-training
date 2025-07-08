@@ -1,5 +1,7 @@
 package com.training.warehouse.enumeric;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum ProductType {
     AIRCORN("Aircorn"),
     SPARE_PART("Spare_part");
@@ -13,7 +15,7 @@ public enum ProductType {
     public String getName() {
         return name;
     }
-
+    @JsonCreator
     public static ProductType fromString(String name){
         for (ProductType type : ProductType.values()) {
             if (type.getName().equalsIgnoreCase(name)) {

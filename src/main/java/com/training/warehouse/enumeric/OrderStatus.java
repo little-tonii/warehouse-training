@@ -1,5 +1,7 @@
 package com.training.warehouse.enumeric;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum OrderStatus {
     NOT_EXPORTED(0),      
     PARTIALLY_EXPORTED(1),
@@ -15,7 +17,7 @@ public enum OrderStatus {
     public long getValue() {
         return value;
     }
-
+    @JsonCreator
     public static OrderStatus fromValue(long value) {
         for (OrderStatus status : OrderStatus.values()) {
             if (status.value == value) {
