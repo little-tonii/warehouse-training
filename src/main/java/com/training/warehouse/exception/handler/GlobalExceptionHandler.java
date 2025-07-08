@@ -2,8 +2,11 @@ package com.training.warehouse.exception.handler;
 
 import java.util.List;
 
+import com.training.warehouse.exception.InvalidInboundStatusException;
+import com.training.warehouse.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -14,54 +17,85 @@ import com.training.warehouse.exception.UserAlreadyExistException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ExceptionResponse> handleException(Exception exception) {
         return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ExceptionResponse.builder()
-                .messages(List.of(exception.getMessage()))
-                .build());
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ExceptionResponse.builder()
+                        .messages(List.of(exception.getMessage()))
+                        .build());
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<ExceptionResponse> handleUserNotFoundException(UsernameNotFoundException exception) {
         return ResponseEntity
-            .status(HttpStatus.NOT_FOUND)
-            .body(ExceptionResponse.builder()
-                .messages(List.of(exception.getMessage()))
-                .build());
+                .status(HttpStatus.NOT_FOUND)
+                .body(ExceptionResponse.builder()
+                        .messages(List.of(exception.getMessage()))
+                        .build());
     }
 
     @ExceptionHandler(UserAlreadyExistException.class)
     public ResponseEntity<ExceptionResponse> handleUserAlreadyExistException(UserAlreadyExistException exception) {
         return ResponseEntity
-            .status(HttpStatus.CONFLICT)
-            .body(ExceptionResponse.builder()
-                .messages(List.of(exception.getMessage()))
-                .build());
+                .status(HttpStatus.CONFLICT)
+                .body(ExceptionResponse.builder()
+                        .messages(List.of(exception.getMessage()))
+                        .build());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ExceptionResponse> handleValidationException(MethodArgumentNotValidException exception) {
         List<String> messages = exception.getBindingResult()
-            .getFieldErrors()
-            .stream()
-            .map(error -> error.getDefaultMessage())
-            .toList();
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .toList();
         return ResponseEntity
-            .badRequest()
-            .body(ExceptionResponse.builder()
-                .messages(messages)
-                .build());
+                .badRequest()
+                .body(ExceptionResponse.builder()
+                        .messages(messages)
+                        .build());
     }
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ExceptionResponse> handleUnauthorizedException(UnauthorizedException exception) {
         return ResponseEntity
-            .status(HttpStatus.UNAUTHORIZED)
-            .body(ExceptionResponse.builder()
-                .messages(List.of(exception.getMessage()))
-                .build());
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ExceptionResponse.builder()
+                        .messages(List.of(exception.getMessage()))
+                        .build());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ExceptionResponse> handleInvalidEnumException(HttpMessageNotReadableException ex) {
+        Throwable cause = ex;
+        while (cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        String realMsg = cause.getMessage();
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ExceptionResponse.builder()
+                        .messages(List.of(realMsg))
+                        .build());
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ExceptionResponse> handleNotFoundException(NotFoundException exception) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ExceptionResponse
+                        .builder()
+                        .messages(List.of(exception.getMessage()))
+                        .build());
+    }
+
+    @ExceptionHandler(InvalidInboundStatusException.class)
+    public ResponseEntity<ExceptionResponse> handleInvalidStatus(InvalidInboundStatusException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ExceptionResponse.builder().messages(List.of(ex.getMessage())).build());
     }
 }
