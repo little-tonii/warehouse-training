@@ -20,68 +20,62 @@ public class InboundServiceImpl implements InboundService {
 
     @Override
     public InboundResponse createInbound(InboundRequest dto) {
-        InboundEntity entity = new InboundEntity();
-        entity.setInvoice(dto.getInvoice());
-        entity.setProductType(dto.getProductType());
-        entity.setSupplierCd(dto.getSupplierCd());
-        entity.setReceiveDate(dto.getReceiveDate());
-        entity.setStatus(OrderStatus.NOT_EXPORTED);
-        entity.setQuantity(dto.getQuantity());
-        LocalDateTime now = LocalDateTime.now();
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
+        InboundEntity entity = InboundEntity.builder()
+                .invoice(dto.getInvoice())
+                .productType(dto.getProductType())
+                .supplierCd(dto.getSupplierCd())
+                .receiveDate(dto.getReceiveDate())
+                .status(OrderStatus.NOT_EXPORTED)
+                .quantity(dto.getQuantity())
+                .build();
 
-        InboundEntity savedEntity = inboundRepository.save(entity);
-
-        InboundResponse result = new InboundResponse();
-        result.setId(savedEntity.getId());
-        result.setInvoice(savedEntity.getInvoice());
-        result.setProductType(savedEntity.getProductType());
-        result.setSupplierCd(savedEntity.getSupplierCd());
-        result.setReceiveDate(savedEntity.getReceiveDate());
-        result.setQuantity(savedEntity.getQuantity());
-        result.setStatus(savedEntity.getStatus());
-        result.setCreatedAt(savedEntity.getCreatedAt());
-        result.setUpdatedAt(savedEntity.getUpdatedAt());
-
-        return result;
+        InboundEntity saved = inboundRepository.save(entity);
+        return mapToResponse(saved);
     }
 
     @Override
     public InboundResponse updateInbound(Long id, InboundRequest dto) {
-        InboundEntity entity = inboundRepository.findById(id).orElseThrow(() -> new RuntimeException("Inbound not found"));
+        InboundEntity entity = inboundRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Inbound not found"));
+
         if (entity.getStatus() != OrderStatus.NOT_EXPORTED) {
             throw new RuntimeException("Cannot update. Inbound status is not editable.");
         }
+
         entity.setInvoice(dto.getInvoice());
         entity.setProductType(dto.getProductType());
         entity.setSupplierCd(dto.getSupplierCd());
         entity.setReceiveDate(dto.getReceiveDate());
-        entity.setStatus(dto.getStatus());
         entity.setQuantity(dto.getQuantity());
+        entity.setStatus(dto.getStatus());
         entity.setUpdatedAt(LocalDateTime.now());
 
-        InboundEntity savedEntity = inboundRepository.save(entity);
-
-        InboundResponse res = new InboundResponse();
-        res.setId(savedEntity.getId());
-        res.setInvoice(savedEntity.getInvoice());
-        res.setProductType(savedEntity.getProductType());
-        res.setSupplierCd(savedEntity.getSupplierCd());
-        res.setReceiveDate(savedEntity.getReceiveDate());
-        res.setQuantity(savedEntity.getQuantity());
-        res.setStatus(savedEntity.getStatus());
-        res.setCreatedAt(savedEntity.getCreatedAt());
-        res.setUpdatedAt(savedEntity.getUpdatedAt());
-        return res;
+        return mapToResponse(inboundRepository.save(entity));
     }
 
     @Override
     public void deleteInbound(Long id) {
-        InboundEntity entity = inboundRepository.findById(id).orElseThrow(() -> new RuntimeException("Inbound not found"));
+        InboundEntity entity = inboundRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Inbound ${id} not exist"));
+
         if (entity.getStatus() != OrderStatus.NOT_EXPORTED) {
             throw new RuntimeException("Cannot delete. Inbound status is not editable.");
         }
+
         inboundRepository.delete(entity);
+    }
+
+    private InboundResponse mapToResponse(InboundEntity e) {
+        return InboundResponse.builder()
+                .id(e.getId())
+                .invoice(e.getInvoice())
+                .productType(e.getProductType())
+                .supplierCd(e.getSupplierCd())
+                .receiveDate(e.getReceiveDate())
+                .quantity(e.getQuantity())
+                .status(e.getStatus())
+                .createdAt(e.getCreatedAt())
+                .updatedAt(e.getUpdatedAt())
+                .build();
     }
 }
