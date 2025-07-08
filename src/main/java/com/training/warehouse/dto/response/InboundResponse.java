@@ -3,10 +3,7 @@ package com.training.warehouse.dto.response;
 import com.training.warehouse.enumeric.OrderStatus;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.enumeric.SupplierCd;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +11,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Setter
 @Getter
+@Builder
+@Data
 public class InboundResponse {
     private Long id;
     private String invoice;
