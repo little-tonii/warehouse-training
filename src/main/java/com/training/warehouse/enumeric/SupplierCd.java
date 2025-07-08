@@ -1,5 +1,7 @@
 package com.training.warehouse.enumeric;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum SupplierCd {
     VIET_NAM("VN"),
     THAILAND("TH"),

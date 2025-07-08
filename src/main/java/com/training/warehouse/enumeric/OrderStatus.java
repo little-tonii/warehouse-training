@@ -17,7 +17,7 @@ public enum OrderStatus {
     public long getValue() {
         return value;
     }
-    @JsonCreator
+
     public static OrderStatus fromValue(long value) {
         for (OrderStatus status : OrderStatus.values()) {
             if (status.value == value) {
