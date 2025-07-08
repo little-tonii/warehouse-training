@@ -1,6 +1,7 @@
 package com.training.warehouse.controller;
 
-import com.training.warehouse.dto.request.InboundRequest;
+import com.training.warehouse.dto.request.InboundCreateRequest;
+import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
 import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.service.InboundService;
@@ -31,7 +32,7 @@ public class InboundController {
                     required = true,
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = InboundRequest.class)
+                            schema = @Schema(implementation = InboundCreateRequest.class)
                     )
             ),
             responses = {
@@ -94,7 +95,7 @@ public class InboundController {
             }
     )
     @PostMapping
-    public ResponseEntity<?> createInbound(@Valid @RequestBody InboundRequest request) {
+    public ResponseEntity<?> createInbound(@Valid @RequestBody InboundCreateRequest request) {
         return ResponseEntity.ok(inboundService.createInbound(request));
     }
 
@@ -113,7 +114,7 @@ public class InboundController {
                     required = true,
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = InboundRequest.class)
+                            schema = @Schema(implementation = InboundCreateRequest.class)
                     )
             ),
             responses = {
@@ -168,7 +169,7 @@ public class InboundController {
             }
     )
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateInbound(@PathVariable Long id, @Valid @RequestBody InboundRequest request) {
+    public ResponseEntity<?> updateInbound(@PathVariable Long id, @Valid @RequestBody InboundUpdateRequest request) {
         return ResponseEntity.ok(inboundService.updateInbound(id, request));
     }
 
