@@ -36,6 +36,7 @@ public class WebSecurityConfig {
             .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
             .requestMatchers(HttpMethod.PUT, "/api/user").authenticated()
+            .requestMatchers("/api/report/**").hasRole("ADMIN")
             .anyRequest().authenticated()
         );
         http.exceptionHandling(ex -> ex
