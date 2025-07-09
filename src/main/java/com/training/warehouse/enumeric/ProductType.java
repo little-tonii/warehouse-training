@@ -1,7 +1,7 @@
 package com.training.warehouse.enumeric;
 
 public enum ProductType {
-    AIRCORN("Aircorn"),
+    AIRCON("Aircon"),
     SPARE_PART("Spare_part");
 
     private final String name;
