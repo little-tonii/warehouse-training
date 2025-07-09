@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -303,7 +304,8 @@ public class InboundController {
     }
 
     @PostMapping("/import-inbound-data")
-    public ResponseEntity<?> importInboundDataFile(){
+    public ResponseEntity<?> importInboundDataFile(@RequestParam("file")MultipartFile file){
+        inboundService.importFromCsv(file);
         return ResponseEntity.ok("");
     }
 }
