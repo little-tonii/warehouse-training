@@ -3,7 +3,7 @@ package com.training.warehouse.enumeric;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum ProductType {
-    AIRCORN("Aircorn"),
+    AIRCON("Aircon"),
     SPARE_PART("Spare_part");
 
     private final String name;
