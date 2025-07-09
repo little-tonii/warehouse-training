@@ -18,6 +18,7 @@ import lombok.AllArgsConstructor;
 @Controller
 @RequestMapping("/api/report")
 @AllArgsConstructor
+@io.swagger.v3.oas.annotations.tags.Tag(name = "report")
 public class ReportController {
     
     private final ReportService reportService;
