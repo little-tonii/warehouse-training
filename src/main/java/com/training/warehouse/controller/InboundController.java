@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -20,9 +21,12 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 
 @RestController
@@ -303,9 +307,31 @@ public class InboundController {
         return inboundStatisticService.getInboundSummary(pageable);
     }
 
-    @PostMapping("/import-inbound-data")
-    public ResponseEntity<?> importInboundDataFile(@RequestParam("file")MultipartFile file){
-        inboundService.importFromCsv(file);
-        return ResponseEntity.ok("");
+    @Operation(
+            summary = "Import Inbound Data from CSV file",
+            method = "POST",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Import Result File Response",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "object")
+                            )
+
+                    )
+            }
+    )
+    @PostMapping(value = "/import-inbound-data", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> importInboundDataFile(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> result = inboundService.importFromCsv(file);
+        return ResponseEntity.ok(result);
     }
 }

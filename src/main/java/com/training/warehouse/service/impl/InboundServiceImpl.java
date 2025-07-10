@@ -3,6 +3,7 @@ package com.training.warehouse.service.impl;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import com.training.warehouse.dto.request.InboundCreateRequest;
+import com.training.warehouse.dto.request.InboundImportFileRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
 import com.training.warehouse.entity.InboundEntity;
@@ -17,17 +18,17 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -38,10 +39,12 @@ public class InboundServiceImpl implements InboundService {
     private final InboundRepository inboundRepository;
 
     @Autowired
-    private Validator validator;
+    private final Validator validator;
 
     @Override
-    public void importFromCsv(MultipartFile file) {
+    public Map<String, Object> importFromCsv(MultipartFile file) {
+        List<InboundEntity> validEntities = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
         try (Reader reader = new InputStreamReader(file.getInputStream());
              CSVReader csvReader = new CSVReader(reader)) {
             List<String[]> allRows = csvReader.readAll();
@@ -62,26 +65,29 @@ public class InboundServiceImpl implements InboundService {
                 }
             }
 
+
+
             for (int i = 1; i < allRows.size(); i++) {
-                String row[] = allRows.get(i);
+                String[] row = allRows.get(i);
 
                 try {
-                    InboundCreateRequest dto = new InboundCreateRequest();
+                    InboundImportFileRequest dto = new InboundImportFileRequest();
 
                     dto.setInvoice(row[headerMap.get("invoice")]);
-                    dto.setSupplierCd(SupplierCd.fromCode(row[headerMap.get("suppliercountry")]));
-                    dto.setProductType(ProductType.fromString(row[headerMap.get("producttype")]));
+                    dto.setSupplierCd(row[headerMap.get("suppliercountry")]);
+                    dto.setProductType(row[headerMap.get("producttype")]);
                     dto.setQuantity(Long.parseLong(row[headerMap.get("quantity")]));
 
                     String dateStr = row[headerMap.get("receivedate")];
                     if (dateStr != null && !dateStr.isBlank()) {
-                        dto.setReceiveDate(LocalDateTime.parse(dateStr));
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
+                        LocalDateTime receiveDate = LocalDate.parse(dateStr, formatter).atStartOfDay();
+                        dto.setReceiveDate(receiveDate);
                     }
 
                     dto.setStatus(OrderStatus.NOT_EXPORTED);
 
-                    // 🧠 Validate toàn bộ DTO
-                    Set<ConstraintViolation<InboundCreateRequest>> violations = validator.validate(dto);
+                    Set<ConstraintViolation<InboundImportFileRequest>> violations = validator.validate(dto);
 
                     if (!violations.isEmpty()) {
                         String message = violations.stream()
@@ -90,29 +96,40 @@ public class InboundServiceImpl implements InboundService {
                         throw new IllegalArgumentException(message);
                     }
 
-
-                    // Chuyển sang Entity nếu valid
-                    InboundEntity entity = new InboundEntity();
-                    entity.builder()
+                    InboundEntity entity = InboundEntity.builder()
                             .invoice(dto.getInvoice())
                             .status(dto.getStatus())
-                            .supplierCd(dto.getSupplierCd())
+                            .supplierCd(SupplierCd.fromCode(dto.getSupplierCd()))
                             .quantity(dto.getQuantity())
-                            .productType(dto.getProductType())
+                            .productType(ProductType.fromString(dto.getProductType()))
                             .receiveDate(dto.getReceiveDate())
                             .build();
 
-//                    validEntities.add(entity);
-
+                    validEntities.add(entity);
                 } catch (Exception e) {
-
+                    errors.add("Lỗi dòng " + (i + 1) + ": " + e.getMessage());
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (CsvException e) {
-            throw new RuntimeException(e);
+
+            try {
+                if (!validEntities.isEmpty()) {
+                    inboundRepository.saveAll(validEntities);
+                }
+            } catch (DataIntegrityViolationException e) {
+                throw new RuntimeException("Lỗi lưu dữ liệu: " + e.getMessage(), e);
+            }
+
+            if (!errors.isEmpty()) {
+                errors.add("Import completed with some errors:\n" + String.join("\n", errors));
+            }
+        } catch (IOException | CsvException e) {
+            throw new RuntimeException("Failed to read CSV file", e);
         }
+        Map<String, Object> result = new HashMap<>();
+        result.put("successCount", validEntities.size());
+        result.put("errorMessages", errors);
+
+        return result;
     }
 
     @Override
