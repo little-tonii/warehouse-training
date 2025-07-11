@@ -32,3 +32,5 @@ build/
 ### VS Code ###
 .vscode/
 .env
+
+src/main/resources/firebase/test-warehouse-management-firebase-adminsdk-fbsvc-07fd89c717.json
