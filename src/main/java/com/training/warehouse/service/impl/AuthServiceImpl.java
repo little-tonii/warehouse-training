@@ -1,6 +1,6 @@
 package com.training.warehouse.service.impl;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -57,7 +57,14 @@ public class AuthServiceImpl implements AuthService{
         if (!user.isPresent() || !this.passwordEncoder.matches(request.getPassword(), user.get().getPassword())) {
             throw new UnauthorizedException(ExceptionMessage.UNAUTHORIZED);
         }
-        String token = this.jwtProvider.generateToken(new HashMap<>(), user.get());
+        UserEntity presentUser = user.get();
+        Map<String, Object> claims = Map.of(
+                "id", presentUser.getId(),
+                "username", presentUser.getUsername(),
+                "email", presentUser.getEmail(),
+                "token_version", presentUser.getTokenVersion()
+        );
+        String token = this.jwtProvider.generateToken(claims, presentUser);
         return AuthLoginResponse.builder()
                 .accessToken(token)
                 .build();
