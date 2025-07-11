@@ -6,15 +6,18 @@ import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundImportFileRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
+import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.enumeric.OrderStatus;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.enumeric.SupplierCd;
 import com.training.warehouse.exception.InvalidInboundStatusException;
 import com.training.warehouse.exception.NotFoundException;
+import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.service.InboundService;
 import jakarta.validation.ConstraintViolation;
+
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +28,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +47,10 @@ public class InboundServiceImpl implements InboundService {
 
     @Autowired
     private final Validator validator;
+
+    private final InboundAttachmentRepository inboundAttachmentRepository;
+
+    private final Path rootDir = Paths.get("uploads/inbound");
 
     @Override
     public Map<String, Object> importFromCsv(MultipartFile file) {
@@ -64,8 +75,6 @@ public class InboundServiceImpl implements InboundService {
                     throw new IllegalArgumentException("Missing Column" + field);
                 }
             }
-
-
 
             for (int i = 1; i < allRows.size(); i++) {
                 String[] row = allRows.get(i);
@@ -132,19 +141,69 @@ public class InboundServiceImpl implements InboundService {
         return result;
     }
 
+
+    public void uploadFile(Long inboundId, List<MultipartFile> files){
+        if(files.size() > 5){
+            throw new IllegalArgumentException("Maximum 5 files");
+        }
+        for(MultipartFile file : files){
+            // Kiểm tra loại file
+            String contentType = file.getContentType();
+            if(contentType == null || (!contentType.startsWith("image/") && !contentType.equals("application/pdf"))){
+                throw new IllegalArgumentException("Only Image or PDF");
+            }
+            InboundEntity inbound = inboundRepository.findById(inboundId)
+                    .orElseThrow(() -> new RuntimeException("Inbound is not exist"));
+
+            // Tạo thư mục theo inboundId
+            Path inboundDir = rootDir.resolve(String.valueOf(inboundId));
+            try {
+                Files.createDirectories(inboundDir);
+            } catch (IOException e) {
+                throw new RuntimeException("Không tạo được thư mục upload", e);
+            }
+            String originalFilename = file.getOriginalFilename();
+            String extension = Optional.ofNullable(originalFilename)
+                    .filter(f -> f.contains("."))
+                    .map(f -> f.substring(f.lastIndexOf(".")))
+                    .orElse("");
+            String storedName = UUID.randomUUID() + extension;
+
+            Path targetPath = inboundDir.resolve(storedName);
+            try {
+                file.transferTo(targetPath);
+            } catch (IOException e) {
+                throw new RuntimeException("Lỗi khi lưu file", e);
+            }
+
+            InboundAttachmentEntity attachment = InboundAttachmentEntity.builder()
+                    .fileName(originalFilename)
+                    .build();
+
+            inboundAttachmentRepository.save(attachment);
+        }
+    }
     @Override
     public InboundResponse createInbound(InboundCreateRequest dto) {
-        InboundEntity entity = InboundEntity.builder()
-                .invoice(dto.getInvoice())
-                .productType(dto.getProductType())
-                .supplierCd(dto.getSupplierCd())
-                .receiveDate(dto.getReceiveDate())
-                .status(OrderStatus.NOT_EXPORTED)
-                .quantity(dto.getQuantity())
-                .build();
+        try {
+            List<MultipartFile> attachments = dto.getAttachments();
 
-        InboundEntity saved = inboundRepository.save(entity);
-        return mapToResponse(saved);
+            InboundEntity entity = InboundEntity.builder()
+                    .invoice(dto.getInvoice())
+                    .productType(dto.getProductType())
+                    .supplierCd(dto.getSupplierCd())
+                    .receiveDate(dto.getReceiveDate())
+                    .status(OrderStatus.NOT_EXPORTED)
+                    .quantity(dto.getQuantity())
+                    .build();
+
+            InboundEntity saved = inboundRepository.save(entity);
+            Long savedId = saved.getId();
+            uploadFile(savedId, attachments);
+            return mapToResponse(saved);
+        }catch (Exception e){
+            throw new RuntimeException("Tạo đơn nhập thất bại: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -184,6 +243,7 @@ public class InboundServiceImpl implements InboundService {
     }
 
     private InboundResponse mapToResponse(InboundEntity e) {
+
         return InboundResponse.builder()
                 .id(e.getId())
                 .invoice(e.getInvoice())

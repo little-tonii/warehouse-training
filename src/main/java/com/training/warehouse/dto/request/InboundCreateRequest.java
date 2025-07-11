@@ -11,8 +11,12 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -36,6 +40,8 @@ public class InboundCreateRequest {
     @NotNull
     @Min(value = 1)
     private long quantity;
+
+    private List<MultipartFile> attachments;
 
     // Nếu cần
     public void validate(){

@@ -1,11 +1,13 @@
 package com.training.warehouse.dto.response;
 
+import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.enumeric.OrderStatus;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.enumeric.SupplierCd;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
