@@ -1,6 +1,7 @@
 package com.training.warehouse.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.training.warehouse.common.converter.OrderStatusConverter;
 import com.training.warehouse.common.converter.ProductTypeConverter;
@@ -9,9 +10,14 @@ import com.training.warehouse.enumeric.OrderStatus;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.enumeric.SupplierCd;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,4 +53,16 @@ public class InboundEntity extends BaseEntity {
 
     @Column(nullable = true, name = "quantity")
     private long quantity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, referencedColumnName = "id")
+    private UserEntity user;
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "inb_id", referencedColumnName = "id")
+    private List<OutboundEntity> outbounds;
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "inb_id", referencedColumnName = "id")
+    private List<InboundAttachmentEntity> attachments;
 }

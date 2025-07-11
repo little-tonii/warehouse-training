@@ -1,25 +1,4 @@
-networks:
-  warehouse-training-database-network:
-    driver: bridge
-
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      ACCEPT_EULA: ${MSSQL_ACCEPT_EULA}
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
-      MSSQL_PID: ${MSSQL_MSSQL_PID}
-      TZ: ${MSSQL_TIMEZONE}
-    ports:
-      - "1433:1433"
-    networks:
-      - warehouse-training-database-network
-    volumes:
-      - sqlserver_data:/var/opt/mssql
-
   app:
     build:
       context: .
@@ -29,11 +8,3 @@ services:
     env_file: .env
     ports:
       - "8080:8080"
-    networks:
-      - warehouse-training-database-network
-    depends_on:
-      sqlserver:
-        condition: service_started
-
-volumes:
-  sqlserver_data:

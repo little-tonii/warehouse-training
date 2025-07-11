@@ -24,8 +24,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-@Builder
 @NoArgsConstructor
+@Builder
 public class UserEntity extends BaseEntity implements UserDetails{
 
     @Column(unique = true, nullable = false, name = "username")
@@ -43,6 +43,10 @@ public class UserEntity extends BaseEntity implements UserDetails{
     @Column(name = "role", nullable = false)
     @Convert(converter = RoleConverter.class)
     private Role role;
+
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    private long tokenVersion = 0;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

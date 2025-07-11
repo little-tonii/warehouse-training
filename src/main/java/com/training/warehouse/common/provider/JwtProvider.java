@@ -65,4 +65,9 @@ public class JwtProvider {
         byte[] keyBytes = Decoders.BASE64.decode(envProvider.getJwtSecretKey());
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
+    public long extractTokenVersion(String token) {
+        Object value = extractAllClaims(token).get("token_version");
+        return Long.parseLong(value.toString());
+    }
 }
