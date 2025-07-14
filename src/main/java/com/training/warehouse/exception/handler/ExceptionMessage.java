@@ -7,4 +7,7 @@ public class ExceptionMessage {
     public static final String FOBBIDEN = "forbidden";
     public static final String USER_ALREADY_EXIST = "user already exist";
     public static final String EMAIL_ALREADY_EXIST = "email already exist";
+    public static final String FILENAME_IS_NOT_VALID = "file name is not valid";
+    public static final String FILE_PATH_IS_NOT_VALID = "file path is not valid";
+    public static final String FILETYPE_NOT_ALLOWED = "file type is not allowed";
 }
