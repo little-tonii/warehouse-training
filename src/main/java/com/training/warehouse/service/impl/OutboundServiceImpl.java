@@ -56,6 +56,8 @@ public class OutboundServiceImpl implements OutboundService {
             files.put(attachment.getFileName(), file);
         });
         byte[] mergedFile = this.pdfService.mergeWithBookmarks(files);
+        outbound.setConfirmed(true);
+        this.outboundRepository.save(outbound);
         return mergedFile;
     }
 }
