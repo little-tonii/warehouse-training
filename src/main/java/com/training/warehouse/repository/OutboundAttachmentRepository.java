@@ -1,13 +1,10 @@
 package com.training.warehouse.repository;
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.training.warehouse.entity.OutboundEntity;
 
 @Repository
-public interface OutboundRepository extends JpaRepository<OutboundEntity, Long>{
-    List<OutboundEntity> findByInboundId(long inboundId);
+public interface OutboundAttachmentRepository extends JpaRepository<OutboundEntity, Long>{
 }
