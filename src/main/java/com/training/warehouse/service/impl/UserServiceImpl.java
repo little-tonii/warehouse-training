@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import com.training.warehouse.dto.request.UserUpdateInfoRequest;
 import com.training.warehouse.dto.response.UserUpdateInfoResponse;
 import com.training.warehouse.entity.UserEntity;
-import com.training.warehouse.exception.EmailAlreadyExistException;
+import com.training.warehouse.exception.ConflicException;
 import com.training.warehouse.exception.UnauthorizedException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.UserRepository;
@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
         UserEntity user = userResult.get();
         Optional<UserEntity> userByEmail = this.userRepository.findByEmail(request.getEmail());
         if (userByEmail.isPresent() && userByEmail.get().getId() != user.getId()) {
-            throw new EmailAlreadyExistException(ExceptionMessage.EMAIL_ALREADY_EXIST);
+            throw new ConflicException(ExceptionMessage.EMAIL_ALREADY_EXIST);
         }
         user.setEmail(request.getEmail());
         user.setFullName(request.getFullName());

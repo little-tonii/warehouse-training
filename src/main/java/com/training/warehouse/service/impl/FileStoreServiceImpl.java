@@ -9,9 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.training.warehouse.common.provider.EnvProvider;
-import com.training.warehouse.exception.FileNameIsNotValidException;
-import com.training.warehouse.exception.FilePathIsNotValidException;
-import com.training.warehouse.exception.FileTypeNotAllowedException;
+import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.service.FileStoreService;
 
@@ -54,18 +52,18 @@ public class FileStoreServiceImpl implements FileStoreService {
     public void uploadFile(String bucketName, String filePath, MultipartFile file) {
         String originalFileName = file.getOriginalFilename();
         if (originalFileName == null || originalFileName.isBlank()) {
-            throw new FileNameIsNotValidException(ExceptionMessage.FILENAME_IS_NOT_VALID);
+            throw new BadRequestException(ExceptionMessage.FILENAME_IS_NOT_VALID);
         }
         String cleanedFileName = Paths.get(originalFileName).getFileName().toString();
         if (!cleanedFileName.matches("^[a-zA-Z0-9._-]{1,255}$")) {
-            throw new FileNameIsNotValidException(ExceptionMessage.FILENAME_IS_NOT_VALID);
+            throw new BadRequestException(ExceptionMessage.FILENAME_IS_NOT_VALID);
         }
         if (filePath.contains("..")) {
-            throw new FilePathIsNotValidException(ExceptionMessage.FILE_PATH_IS_NOT_VALID);
+            throw new BadRequestException(ExceptionMessage.FILE_PATH_IS_NOT_VALID);
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new FileTypeNotAllowedException(ExceptionMessage.FILETYPE_NOT_ALLOWED);
+            throw new BadRequestException(ExceptionMessage.FILETYPE_NOT_ALLOWED);
         }
         String objectName = filePath.endsWith("/") ? filePath + cleanedFileName : filePath + "/" + cleanedFileName;
         try {

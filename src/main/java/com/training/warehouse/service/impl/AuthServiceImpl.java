@@ -13,8 +13,8 @@ import com.training.warehouse.dto.response.AuthLoginResponse;
 import com.training.warehouse.dto.response.AuthRegisterResponse;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.Role;
+import com.training.warehouse.exception.ConflicException;
 import com.training.warehouse.exception.UnauthorizedException;
-import com.training.warehouse.exception.UserAlreadyExistException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.UserRepository;
 import com.training.warehouse.service.AuthService;
@@ -33,11 +33,11 @@ public class AuthServiceImpl implements AuthService{
     public AuthRegisterResponse register(AuthRegisterRequest request) {
         Optional<UserEntity> user = this.userRepository.findByUsername(request.getUsername());
         if (user.isPresent()) {
-            throw new UserAlreadyExistException(ExceptionMessage.USER_ALREADY_EXIST);
+            throw new ConflicException(ExceptionMessage.USER_ALREADY_EXIST);
         }
         user = this.userRepository.findByEmail(request.getEmail());
         if (user.isPresent()) {
-            throw new UserAlreadyExistException(ExceptionMessage.USER_ALREADY_EXIST);
+            throw new ConflicException(ExceptionMessage.USER_ALREADY_EXIST);
         }
         UserEntity newUser = UserEntity.builder()
                 .username(request.getUsername())
