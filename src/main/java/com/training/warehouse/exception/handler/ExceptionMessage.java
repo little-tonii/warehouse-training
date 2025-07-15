@@ -12,4 +12,6 @@ public class ExceptionMessage {
     public static final String FILETYPE_NOT_ALLOWED = "file type is not allowed";
     public static final String INBOUND_NOT_FOUND = "inbound not found";
     public static final String CANNOT_DELETE_INBOUND = "cannot delete inbound because it has outbound";
+    public static final String OUTBOUND_NOT_FOUND = "outbound not found";
+    public static final String OUTBOUND_CONFIRMED = "outbound was confirmed";
 }
