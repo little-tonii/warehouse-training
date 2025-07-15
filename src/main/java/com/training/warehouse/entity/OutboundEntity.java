@@ -32,19 +32,26 @@ public class OutboundEntity extends BaseEntity{
     @Column(nullable = false, name = "inb_id")
     private long inboundId;
 
-    @Column(nullable = true, name = "quantity")
+    @Column(nullable = false, name = "quantity")
     private long quantity;
 
     @Convert(converter = ShippingMethodConverter.class)
-    @Column(nullable = true, name = "shipping_method")
+    @Column(nullable = false, name = "shipping_method")
     private ShippingMethod shippingMethod;
 
-    @Column(nullable = true, name = "shipping_date")
-    private LocalDateTime shippingDate;
+    @Column(nullable = false, name = "expected_shipping_date")
+    private LocalDateTime expectedShippingDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, referencedColumnName = "id")
     private UserEntity user;
+
+    @Column(nullable = false, name = "is_confirmed")
+    @Builder.Default
+    private boolean isConfirmed = false;
+
+    @Column(name = "actual_shipping_date", nullable = true)
+    private LocalDateTime actualShippingDate;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "attachment_id", referencedColumnName = "id", nullable = true)

@@ -12,8 +12,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.training.warehouse.exception.BadRequestException;
+import com.training.warehouse.exception.ConflicException;
+import com.training.warehouse.exception.ForbiddenException;
+import com.training.warehouse.exception.NotFoundException;
 import com.training.warehouse.exception.UnauthorizedException;
-import com.training.warehouse.exception.UserAlreadyExistException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -27,24 +30,6 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
-    @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ExceptionResponse> handleUserNotFoundException(UsernameNotFoundException exception) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(ExceptionResponse.builder()
-                        .messages(List.of(exception.getMessage()))
-                        .build());
-    }
-
-    @ExceptionHandler(UserAlreadyExistException.class)
-    public ResponseEntity<ExceptionResponse> handleUserAlreadyExistException(UserAlreadyExistException exception) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(ExceptionResponse.builder()
-                        .messages(List.of(exception.getMessage()))
-                        .build());
-    }
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ExceptionResponse> handleValidationException(MethodArgumentNotValidException exception) {
         List<String> messages = exception.getBindingResult()
@@ -53,11 +38,41 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getDefaultMessage())
                 .toList();
         return ResponseEntity
-                .badRequest()
+                .status(HttpStatus.BAD_REQUEST)
                 .body(ExceptionResponse.builder()
                         .messages(messages)
                         .build());
     }
+
+
+
+    @ExceptionHandler(ConflicException.class)
+    public ResponseEntity<ExceptionResponse> handleConflicException(ConflicException exception) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ExceptionResponse.builder()
+                        .messages(List.of(exception.getMessage()))
+                        .build());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ExceptionResponse> handleForbiddenException(ForbiddenException exception) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ExceptionResponse.builder()
+                        .messages(List.of(exception.getMessage()))
+                        .build());
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ExceptionResponse> handleNotFoundException(NotFoundException exception) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ExceptionResponse.builder()
+                        .messages(List.of(exception.getMessage()))
+                        .build());
+    }
+
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ExceptionResponse> handleUnauthorizedException(UnauthorizedException exception) {
@@ -80,16 +95,6 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ExceptionResponse.builder()
                         .messages(List.of(realMsg))
-                        .build());
-    }
-
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ExceptionResponse> handleNotFoundException(NotFoundException exception) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(ExceptionResponse
-                        .builder()
-                        .messages(List.of(exception.getMessage()))
                         .build());
     }
 

@@ -10,6 +10,7 @@ import com.training.warehouse.entity.OutboundEntity;
 
 @Repository
 public interface OutboundRepository extends JpaRepository<OutboundEntity, Long>{
+    List<OutboundEntity> findByInboundId(long inboundId);
     List<OutboundEntity> findByInboundIdAndShippingDateBetween(Long inboundId, LocalDateTime start, LocalDateTime end);
     List<OutboundEntity> findByInboundIdAndShippingDateBefore(Long inboundId, LocalDateTime beforeDate);
 }

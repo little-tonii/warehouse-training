@@ -8,8 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 public interface InboundService {
+    void deleteInboundById(long inboundId);
     InboundResponse createInbound(InboundCreateRequest request);
     InboundResponse updateInbound(Long id, InboundUpdateRequest request);
-    void deleteInbound(Long id);
     Map<String, Object> importFromCsv(MultipartFile file);
 }

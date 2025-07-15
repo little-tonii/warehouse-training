@@ -8,13 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.training.warehouse.exception.NotFoundException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.repository.UserRepository;
@@ -36,7 +36,7 @@ public class AuthenticationConfig {
     @Bean
     protected UserDetailsService userDetailsService() {
         return username -> userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException(ExceptionMessage.USER_NOT_FOUND));
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.USER_NOT_FOUND));
     }
 
     @Bean
