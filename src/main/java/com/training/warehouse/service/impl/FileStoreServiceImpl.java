@@ -44,7 +44,7 @@ public class FileStoreServiceImpl implements FileStoreService {
                     .object(objectName)
                     .build());
         } catch (Exception e) {
-            throw new RuntimeException(ExceptionMessage.UNKNOWN);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -79,7 +79,7 @@ public class FileStoreServiceImpl implements FileStoreService {
                             .contentType(contentType)
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException(ExceptionMessage.UNKNOWN);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -93,7 +93,7 @@ public class FileStoreServiceImpl implements FileStoreService {
                         .build())) {
             return inputStream.readAllBytes();
         } catch (Exception e) {
-            throw new RuntimeException(ExceptionMessage.UNKNOWN);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -111,7 +111,7 @@ public class FileStoreServiceImpl implements FileStoreService {
                                     Map.of("response-content-disposition", "attachment; filename=\"" + fileName + "\""))
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException(ExceptionMessage.UNKNOWN);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
