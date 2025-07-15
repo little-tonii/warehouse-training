@@ -53,6 +53,14 @@ public class InboundController {
                 )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
                 description = "inbound not found",
                 content = @io.swagger.v3.oas.annotations.media.Content(
