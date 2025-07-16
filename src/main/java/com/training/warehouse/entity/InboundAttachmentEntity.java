@@ -21,7 +21,7 @@ public class InboundAttachmentEntity extends BaseEntity{
     @Column(nullable = false, name = "file_name")
     private String fileName;
 
-    @Column(nullable = false, name = "file_type")
+    @Column(nullable = false, name = "file_path")
     private String filePath;
 
     @Column(nullable = false, name = "inb_id")
