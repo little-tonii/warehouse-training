@@ -53,7 +53,8 @@ public class WebSecurityConfig {
                                 // outbound
                                 .requestMatchers(
                                                 HttpMethod.GET,
-                                                "/api/outbound/*/confirm")
+                                                "/api/outbound/*/confirm",
+                                                "/api/outbound/late-statistics")
                                 .authenticated()
                                 .anyRequest().denyAll());
                 http.exceptionHandling(ex -> ex

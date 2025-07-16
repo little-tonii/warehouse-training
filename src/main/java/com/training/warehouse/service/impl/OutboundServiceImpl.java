@@ -1,10 +1,15 @@
 package com.training.warehouse.service.impl;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Service;
 
 import com.training.warehouse.entity.InboundAttachmentEntity;
@@ -16,6 +21,7 @@ import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundRepository;
+import com.training.warehouse.service.ExcelService;
 import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.OutboundService;
 import com.training.warehouse.service.PdfService;
@@ -30,6 +36,7 @@ public class OutboundServiceImpl implements OutboundService {
     private final InboundAttachmentRepository inboundAttachmentRepository;
     private final FileStoreService fileStoreService;
     private final PdfService pdfService;
+    private final ExcelService excelService;
 
     @Override
     public byte[] confirmOutboundById(long outboundId) {
@@ -59,5 +66,28 @@ public class OutboundServiceImpl implements OutboundService {
         outbound.setConfirmed(true);
         this.outboundRepository.save(outbound);
         return mergedFile;
+    }
+
+    @Override
+    public byte[] getLateOutboundStatistics(LocalDateTime startMonth, LocalDateTime endMonth) {
+        List<OutboundEntity> outboundResult = this.outboundRepository.findLateOutboundsCreatedBetween(startMonth,
+                endMonth);
+        Map<YearMonth, List<OutboundEntity>> groupedByMonth = outboundResult.stream()
+                .collect(Collectors.groupingBy(outboundEntity -> YearMonth.from(outboundEntity.getCreatedAt())));
+        Workbook workbook = this.excelService.createWorkbook();
+        List<String> headers = List.of("id", "quantity", "expected", "actual");
+        for (var outbounds: groupedByMonth.entrySet()) {
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (var outbound: outbounds.getValue()) {
+                Map<String, Object> dataRow = new HashMap<>();
+                dataRow.put("id", outbound.getId());
+                dataRow.put("quantity", outbound.getQuantity());
+                dataRow.put("expected", outbound.getExpectedShippingDate());
+                dataRow.put("actual", outbound.getActualShippingDate());
+                data.add(dataRow);
+            }
+            this.excelService.addSheetToWorkbook(workbook, outbounds.getKey().toString(), headers, data);
+        }
+        return this.excelService.writeWorkbookToBytes(workbook);
     }
 }
