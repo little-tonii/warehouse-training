@@ -9,4 +9,5 @@ public interface ExcelService {
     Workbook createWorkbook();
     void addSheetToWorkbook(Workbook workbook, String sheetName, List<String> headers, List<Map<String, Object>> data);
     byte[] writeWorkbookToBytes(Workbook workbook);
+    void addPieChartSheetToWorkBook(Workbook workbook, String sheetName, Map<String, Number> data);
 }

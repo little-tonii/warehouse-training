@@ -76,7 +76,9 @@ public class OutboundServiceImpl implements OutboundService {
                 .collect(Collectors.groupingBy(outboundEntity -> YearMonth.from(outboundEntity.getCreatedAt())));
         Workbook workbook = this.excelService.createWorkbook();
         List<String> headers = List.of("id", "quantity", "expected", "actual");
+        Map<String, Number> pieData = new HashMap<>();
         for (var outbounds: groupedByMonth.entrySet()) {
+            pieData.put(outbounds.getKey().toString(), outbounds.getValue().size());
             List<Map<String, Object>> data = new ArrayList<>();
             for (var outbound: outbounds.getValue()) {
                 Map<String, Object> dataRow = new HashMap<>();
@@ -88,6 +90,7 @@ public class OutboundServiceImpl implements OutboundService {
             }
             this.excelService.addSheetToWorkbook(workbook, outbounds.getKey().toString(), headers, data);
         }
+        this.excelService.addPieChartSheetToWorkBook(workbook, "Pie Chart", pieData);
         return this.excelService.writeWorkbookToBytes(workbook);
     }
 }
