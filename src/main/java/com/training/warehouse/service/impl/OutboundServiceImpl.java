@@ -25,39 +25,46 @@ import lombok.AllArgsConstructor;
 @Service
 @AllArgsConstructor
 public class OutboundServiceImpl implements OutboundService {
-    private final OutboundRepository outboundRepository;
-    private final InboundRepository inboundRepository;
-    private final InboundAttachmentRepository inboundAttachmentRepository;
-    private final FileStoreService fileStoreService;
-    private final PdfService pdfService;
+//    private final OutboundRepository outboundRepository;
+//    private final InboundRepository inboundRepository;
+//    private final InboundAttachmentRepository inboundAttachmentRepository;
+//    private final FileStoreService fileStoreService;
+//    private final PdfService pdfService;
 
     @Override
     public byte[] confirmOutboundById(long outboundId) {
-        Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
-        if (!outboundResult.isPresent()) {
-            throw new NotFoundException(ExceptionMessage.OUTBOUND_NOT_FOUND);
-        }
-        OutboundEntity outbound = outboundResult.get();
-        if (outbound.isConfirmed()) {
-            throw new BadRequestException(ExceptionMessage.OUTBOUND_CONFIRMED);
-        }
-        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
-        if (!inboundResult.isPresent()) {
-            throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
-        }
-        List<InboundAttachmentEntity> inboundAttachments = this.inboundAttachmentRepository
-                .findByInboundId(outbound.getInboundId());
-        Map<String, byte[]> files = new HashMap<>();
-        inboundAttachments.forEach((attachment) -> {
-            byte[] file = fileStoreService.getFile(
-                    FileStoreService.INBOUND_BUCKET,
-                    attachment.getFilePath(),
-                    attachment.getFileName());
-            files.put(attachment.getFileName(), file);
-        });
-        byte[] mergedFile = this.pdfService.mergeWithBookmarks(files);
-        outbound.setConfirmed(true);
-        this.outboundRepository.save(outbound);
-        return mergedFile;
+        return new byte[0];
     }
+
+
+//
+//    @Override
+//    public byte[] confirmOutboundById(long outboundId) {
+//        Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
+//        if (!outboundResult.isPresent()) {
+//            throw new NotFoundException(ExceptionMessage.OUTBOUND_NOT_FOUND);
+//        }
+//        OutboundEntity outbound = outboundResult.get();
+//        if (outbound.isConfirmed()) {
+//            throw new BadRequestException(ExceptionMessage.OUTBOUND_CONFIRMED);
+//        }
+//        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
+//        if (!inboundResult.isPresent()) {
+//            throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
+//        }
+//        List<InboundAttachmentEntity> inboundAttachments = this.inboundAttachmentRepository
+//                .findByInboundId(outbound.getInboundId());
+//        Map<String, byte[]> files = new HashMap<>();
+//        inboundAttachments.forEach((attachment) -> {
+//            byte[] file = fileStoreService.getFile(
+//                    FileStoreService.INBOUND_BUCKET,
+//                    attachment.getFilePath(),
+//                    attachment.getFileName());
+//            files.put(attachment.getFileName(), file);
+//        });
+//        byte[] mergedFile = this.pdfService.mergeWithBookmarks(files);
+//        outbound.setConfirmed(true);
+//        this.outboundRepository.save(outbound);
+//        return mergedFile;
+//    }
 }
