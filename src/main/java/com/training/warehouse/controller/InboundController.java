@@ -4,6 +4,7 @@ import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
 import com.training.warehouse.dto.response.InboundSummaryResponse;
+import com.training.warehouse.entity.UserEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;

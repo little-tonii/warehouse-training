@@ -2,6 +2,7 @@ package com.training.warehouse.service.impl;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
+import com.training.warehouse.common.util.SecurityUtil;
 import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundImportFileRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
@@ -9,6 +10,7 @@ import com.training.warehouse.dto.response.InboundResponse;
 import java.util.List;
 import java.util.Optional;
 
+import com.training.warehouse.entity.UserEntity;
 import org.springframework.stereotype.Service;
 
 import com.training.warehouse.entity.InboundAttachmentEntity;
@@ -33,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -153,50 +156,10 @@ public class InboundServiceImpl implements InboundService {
         return result;
     }
 
-
-    public void uploadFile(Long inboundId, List<MultipartFile> files){
-        if(files.size() > 5){
-            throw new IllegalArgumentException("Maximum 5 files");
-        }
-        for(MultipartFile file : files){
-            // Kiểm tra loại file
-            String contentType = file.getContentType();
-            if(contentType == null || (!contentType.startsWith("image/") && !contentType.equals("application/pdf"))){
-                throw new IllegalArgumentException("Only Image or PDF");
-            }
-            InboundEntity inbound = inboundRepository.findById(inboundId)
-                    .orElseThrow(() -> new RuntimeException("Inbound is not exist"));
-
-            // Tạo thư mục theo inboundId
-            Path inboundDir = rootDir.resolve(String.valueOf(inboundId));
-            try {
-                Files.createDirectories(inboundDir);
-            } catch (IOException e) {
-                throw new RuntimeException("Không tạo được thư mục upload", e);
-            }
-            String originalFilename = file.getOriginalFilename();
-            String extension = Optional.ofNullable(originalFilename)
-                    .filter(f -> f.contains("."))
-                    .map(f -> f.substring(f.lastIndexOf(".")))
-                    .orElse("");
-            String storedName = UUID.randomUUID() + extension;
-
-            Path targetPath = inboundDir.resolve(storedName);
-            try {
-                file.transferTo(targetPath);
-            } catch (IOException e) {
-                throw new RuntimeException("Lỗi khi lưu file", e);
-            }
-
-            InboundAttachmentEntity attachment = InboundAttachmentEntity.builder()
-                    .fileName(originalFilename)
-                    .build();
-
-            inboundAttachmentRepository.save(attachment);
-        }
-    }
     @Override
+    @Transactional
     public InboundResponse createInbound(InboundCreateRequest dto) {
+        UserEntity currUser = SecurityUtil.getCurrentUser();
         try {
             List<MultipartFile> attachments = dto.getAttachments();
 
@@ -207,11 +170,26 @@ public class InboundServiceImpl implements InboundService {
                     .receiveDate(dto.getReceiveDate())
                     .status(OrderStatus.NOT_EXPORTED)
                     .quantity(dto.getQuantity())
+                    .user(currUser)
                     .build();
 
             InboundEntity saved = inboundRepository.save(entity);
             Long savedId = saved.getId();
-            uploadFile(savedId, attachments);
+//            uploadFile(savedId, attachments);
+            if(attachments.size() > 5){
+                throw new IllegalArgumentException("Maximum 5 files");
+            }
+            for(MultipartFile file : attachments){
+                String originFileName = file.getOriginalFilename();
+                fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET,String.valueOf(savedId),file);
+                InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
+                        .fileName(originFileName)
+                        .inboundId(savedId)
+                        .filePath(String.valueOf(savedId)+"/"+file.getName())
+                        .build();
+                inboundAttachmentRepository.save(inboundAttachment);
+            }
+
             return mapToResponse(saved);
         }catch (Exception e){
             throw new RuntimeException("Tạo đơn nhập thất bại: " + e.getMessage(), e);
