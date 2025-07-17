@@ -34,7 +34,6 @@ import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,9 +41,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -64,8 +60,6 @@ public class InboundServiceImpl implements InboundService {
 
     private final OutboundRepository outboundRepository;
     private final InboundAttachmentRepository inboundAttachmentRepository;
-
-    private final Path rootDir = Paths.get("uploads/inbound");
 
     @Override
     public Map<String, Object> importFromCsv(MultipartFile file) {
@@ -173,6 +167,7 @@ public class InboundServiceImpl implements InboundService {
                     .user(currUser)
                     .build();
 
+
             InboundEntity saved = inboundRepository.save(entity);
             Long savedId = saved.getId();
 //            uploadFile(savedId, attachments);
@@ -180,12 +175,12 @@ public class InboundServiceImpl implements InboundService {
                 throw new IllegalArgumentException("Maximum 5 files");
             }
             for(MultipartFile file : attachments){
-                String originFileName = file.getOriginalFilename();
+                String originFileName = file.getOriginalFilename().replaceAll("\\s+", "_");
                 fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET,String.valueOf(savedId),file);
                 InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
                         .fileName(originFileName)
                         .inboundId(savedId)
-                        .filePath(String.valueOf(savedId)+"/"+file.getName())
+                        .filePath(savedId.toString())
                         .build();
                 inboundAttachmentRepository.save(inboundAttachment);
             }

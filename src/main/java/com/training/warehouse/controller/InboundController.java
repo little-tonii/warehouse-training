@@ -113,7 +113,7 @@ public class InboundController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
-                            mediaType = "application/json",
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                             schema = @Schema(implementation = InboundCreateRequest.class)
                     )
             ),
@@ -176,8 +176,8 @@ public class InboundController {
                     )
             }
     )
-    @PostMapping
-    public ResponseEntity<?> createInbound(@Valid @RequestBody InboundCreateRequest request) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createInbound( @ModelAttribute @Valid InboundCreateRequest request) {
         return ResponseEntity.ok(inboundService.createInbound(request));
     }
 
