@@ -30,13 +30,8 @@ import com.training.warehouse.service.ExcelService;
 public class ExcelServiceImpl implements ExcelService {
 
     @Override
-    public Workbook createWorkbook() {
-        return new XSSFWorkbook();
-    }
-
-    @Override
-    public void addSheetToWorkbook(Workbook workbook, String sheetName, List<String> headers,
-            List<Map<String, Object>> data) {
+    public Workbook createWorkbook(String sheetName, List<String> headers, List<Map<String, Object>> data) {
+        Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet(sheetName);
         Row headerRow = sheet.createRow(0);
         for (int i = 0; i < headers.size(); i++) {
@@ -62,43 +57,36 @@ public class ExcelServiceImpl implements ExcelService {
         for (int i = 0; i < headers.size(); i++) {
             sheet.autoSizeColumn(i);
         }
+        return workbook;
     }
 
     @Override
-    public byte[] writeWorkbookToBytes(Workbook workbook) {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            workbook.write(out);
-            workbook.close();
-            return out.toByteArray();
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
-    @Override
-    public void addPieChartSheetToWorkBook(Workbook workbook, String sheetName, Map<String, Number> data) {
-        XSSFSheet sheet = (XSSFSheet) workbook.createSheet(sheetName);
-        int rowIndex = 0;
-        Row header = sheet.createRow(rowIndex++);
+    public void addPieChart(XSSFWorkbook workbook, String sheetName, Map<String, Number> chartData) {
+        XSSFSheet sheet = workbook.getSheet(sheetName);
+        int lastRow = sheet.getLastRowNum();
+        int chartHeaderRowIndex = lastRow + 2;
+        Row header = sheet.createRow(chartHeaderRowIndex);
         header.createCell(0).setCellValue("Category");
         header.createCell(1).setCellValue("Value");
-        for (Map.Entry<String, Number> entry : data.entrySet()) {
+        int dataStartRow = chartHeaderRowIndex + 1;
+        int rowIndex = dataStartRow;
+        for (Map.Entry<String, Number> entry : chartData.entrySet()) {
             Row row = sheet.createRow(rowIndex++);
             row.createCell(0).setCellValue(entry.getKey());
             row.createCell(1).setCellValue(entry.getValue().doubleValue());
         }
+        int dataEndRow = rowIndex - 1;
         XSSFDrawing drawing = sheet.createDrawingPatriarch();
-        XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 3, 1, 10, 20);
+        XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 3, dataStartRow, 10, dataStartRow + 15);
         XSSFChart chart = drawing.createChart(anchor);
         chart.setTitleText("Pie Chart");
         chart.setTitleOverlay(false);
         XDDFChartLegend legend = chart.getOrAddLegend();
         legend.setPosition(LegendPosition.RIGHT);
-        int size = data.size();
-        XDDFDataSource<String> categories = XDDFDataSourcesFactory.fromStringCellRange(sheet,
-                new CellRangeAddress(1, size, 0, 0));
-        XDDFNumericalDataSource<Double> values = XDDFDataSourcesFactory.fromNumericCellRange(sheet,
-                new CellRangeAddress(1, size, 1, 1));
+        XDDFDataSource<String> categories = XDDFDataSourcesFactory.fromStringCellRange(
+                sheet, new CellRangeAddress(dataStartRow, dataEndRow, 0, 0));
+        XDDFNumericalDataSource<Double> values = XDDFDataSourcesFactory.fromNumericCellRange(
+                sheet, new CellRangeAddress(dataStartRow, dataEndRow, 1, 1));
         XDDFChartData pieData = chart.createData(ChartTypes.PIE, null, null);
         XDDFChartData.Series series = pieData.addSeries(categories, values);
         series.setTitle("Distribution", null);
