@@ -7,6 +7,7 @@ import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundImportFileRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -153,6 +154,7 @@ public class InboundServiceImpl implements InboundService {
     @Override
     @Transactional
     public InboundResponse createInbound(InboundCreateRequest dto) {
+        dto.validate();
         UserEntity currUser = SecurityUtil.getCurrentUser();
         try {
             List<MultipartFile> attachments = dto.getAttachments();
@@ -170,23 +172,33 @@ public class InboundServiceImpl implements InboundService {
 
             InboundEntity saved = inboundRepository.save(entity);
             Long savedId = saved.getId();
-//            uploadFile(savedId, attachments);
-            if(attachments.size() > 5){
-                throw new IllegalArgumentException("Maximum 5 files");
-            }
-            for(MultipartFile file : attachments){
-                String originFileName = file.getOriginalFilename().replaceAll("\\s+", "_");
-                fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET,String.valueOf(savedId),file);
-                InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
-                        .fileName(originFileName)
-                        .inboundId(savedId)
-                        .filePath(savedId.toString())
-                        .build();
-                inboundAttachmentRepository.save(inboundAttachment);
+
+            for (MultipartFile file : attachments) {
+                String originFileName = file.getOriginalFilename();
+                try {
+
+                    fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, String.valueOf(savedId), file);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                try {
+                    InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
+                            .fileName(originFileName)
+                            .inboundId(savedId)
+                            .filePath(savedId.toString())
+                            .build();
+                    inboundAttachmentRepository.save(inboundAttachment);
+                } catch (Exception e) {
+                    try {
+                        fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, savedId.toString(), originFileName);
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
             }
 
             return mapToResponse(saved);
-        }catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("Tạo đơn nhập thất bại: " + e.getMessage(), e);
         }
     }
@@ -218,7 +230,7 @@ public class InboundServiceImpl implements InboundService {
 
     @Override
     public void deleteInboundById(long inboundId) {
-        Optional<InboundEntity> inboundResult  = inboundRepository.findById(inboundId);
+        Optional<InboundEntity> inboundResult = inboundRepository.findById(inboundId);
         if (!inboundResult.isPresent()) {
             throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
         }
