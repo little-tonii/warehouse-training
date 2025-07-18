@@ -19,7 +19,9 @@ public interface FileStoreService {
 
     void deleteFile(String bucketName, String filePath, String fileName);
 
-    void uploadFile(String bucketName, String fileName, MultipartFile file);
+    void uploadFile(String bucketName, String filePath, MultipartFile file);
+
+    void uploadFile(String bucketName, String filePath, String fileName, byte[] file);
 
     byte[] getFile(String bucketName, String filePath, String fileName);
 
