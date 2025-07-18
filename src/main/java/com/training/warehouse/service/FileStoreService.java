@@ -21,6 +21,8 @@ public interface FileStoreService {
 
     void uploadFile(String bucketName, String fileName, MultipartFile file);
 
+    void uploadFile(String bucketName, String filePath, String fileName, byte[] file);
+
     byte[] getFile(String bucketName, String filePath, String fileName);
 
     public String getPresignedDownloadUrl(String bucketName, String filePath, String fileName);

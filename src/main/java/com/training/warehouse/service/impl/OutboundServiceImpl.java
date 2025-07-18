@@ -14,15 +14,18 @@ import java.util.Map;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
+import com.training.warehouse.entity.OutboundAttachmentEntity;
 import com.training.warehouse.entity.OutboundEntity;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.NotFoundException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
+import com.training.warehouse.repository.OutboundAttachmentRepository;
 import com.training.warehouse.repository.OutboundRepository;
 import com.training.warehouse.service.ExcelService;
 import com.training.warehouse.service.FileStoreService;
@@ -40,8 +43,10 @@ public class OutboundServiceImpl implements OutboundService {
     private final FileStoreService fileStoreService;
     private final PdfService pdfService;
     private final ExcelService excelService;
+    private final OutboundAttachmentRepository outboundAttachmentRepository;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public byte[] confirmOutboundById(long outboundId) {
         Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
         if (!outboundResult.isPresent()) {
@@ -66,8 +71,18 @@ public class OutboundServiceImpl implements OutboundService {
             files.put(attachment.getFileName(), file);
         });
         byte[] mergedFile = this.pdfService.mergeWithBookmarks(files);
+
+        String filePath = "outbound-%d".formatted(outbound.getId());
+        String fileName = "outbound-%d-confirm".formatted(outbound.getId());
+        this.outboundAttachmentRepository.save(
+                OutboundAttachmentEntity.builder()
+                        .fileName(fileName)
+                        .filePath(filePath)
+                        .outboundId(outbound.getId())
+                        .build());
         outbound.setConfirmed(true);
         this.outboundRepository.save(outbound);
+        this.fileStoreService.uploadFile(FileStoreService.OUTBOUND_BUCKET, filePath, fileName, mergedFile);
         return mergedFile;
     }
 
