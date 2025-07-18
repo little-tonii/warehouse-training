@@ -116,6 +116,10 @@ public class InboundServiceImpl implements InboundService {
                         throw new IllegalArgumentException(message);
                     }
 
+                    if (inboundRepository.findByInvoice(dto.getInvoice()).isPresent()) {
+                        throw new BadRequestException("Invoice đã tồn tại");
+                    }
+
                     InboundEntity entity = InboundEntity.builder()
                             .invoice(dto.getInvoice())
                             .status(dto.getStatus())
@@ -132,7 +136,7 @@ public class InboundServiceImpl implements InboundService {
             }
 
             try {
-                if (!validEntities.isEmpty()) {
+                if (errors.isEmpty()) {
                     inboundRepository.saveAll(validEntities);
                 }
             } catch (DataIntegrityViolationException e) {
@@ -146,7 +150,7 @@ public class InboundServiceImpl implements InboundService {
             throw new RuntimeException("Failed to read CSV file", e);
         }
         Map<String, Object> result = new HashMap<>();
-        result.put("successCount", validEntities.size());
+        result.put("successCount", validEntities.size()+" hàng được import");
         result.put("errorMessages", errors);
 
         return result;
