@@ -25,5 +25,6 @@ public class InboundResponse {
     private long quantity;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<InboundAttachmentEntity> inboundAttachments;
     private List<FileUploadResult> results;
 }

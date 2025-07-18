@@ -2,6 +2,7 @@ package com.training.warehouse.service.impl;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
+import com.training.warehouse.common.util.FileUtil;
 import com.training.warehouse.common.util.SecurityUtil;
 import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundImportFileRequest;
@@ -249,9 +250,12 @@ public class InboundServiceImpl implements InboundService {
 
         List<FileUploadResult> results = new ArrayList<>();
         try{
-            inboundRepository.save(entity);
+            InboundEntity saved = inboundRepository.save(entity);
             List<InboundAttachmentEntity> inboundAttachments = entity.getAttachments();
             int i = 0;
+            if (inboundAttachments == null) {
+                return mapToResponse(saved,null);
+            }
             for(InboundAttachmentEntity inboundAttachment: inboundAttachments){
                 FileUploadResult result = new FileUploadResult();
                 if(dto.getAttachments().get(i) != null ){
@@ -262,6 +266,8 @@ public class InboundServiceImpl implements InboundService {
                     String newFileName = dto.getAttachments().get(i).getOriginalFilename();
                     result.setFileName(newFileName);
                     try{
+                        FileUtil.validateFileName(newFileName);
+
                         try { // k tồn tại file
                             fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, fileName);
                         } catch (Exception e) {
@@ -281,7 +287,7 @@ public class InboundServiceImpl implements InboundService {
                     } catch (Exception e) {
                         result.setUploaded(false);
                         result.setSavedToDB(false);
-                        result.setErrorMessage("Cannot save file "+newFileName);
+                        result.setErrorMessage("Cannot save file "+newFileName + e);
                     }
                 }
                 i++;
@@ -326,6 +332,7 @@ public class InboundServiceImpl implements InboundService {
                 .status(e.getStatus())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
+                .inboundAttachments(e.getAttachments())
                 .results(results)
                 .build();
     }
