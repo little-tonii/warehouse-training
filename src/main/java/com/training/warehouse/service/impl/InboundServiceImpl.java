@@ -6,6 +6,7 @@ import com.training.warehouse.common.util.SecurityUtil;
 import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundImportFileRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
+import com.training.warehouse.dto.response.FileUploadResult;
 import com.training.warehouse.dto.response.InboundResponse;
 
 import java.util.List;
@@ -156,6 +157,9 @@ public class InboundServiceImpl implements InboundService {
     public InboundResponse createInbound(InboundCreateRequest dto) {
         dto.validate();
         UserEntity currUser = SecurityUtil.getCurrentUser();
+        InboundEntity saved = null;
+        Long savedId = null;
+        List<FileUploadResult> results = new ArrayList<>();
         try {
             List<MultipartFile> attachments = dto.getAttachments();
 
@@ -169,38 +173,56 @@ public class InboundServiceImpl implements InboundService {
                     .user(currUser)
                     .build();
 
-
-            InboundEntity saved = inboundRepository.save(entity);
-            Long savedId = saved.getId();
+            try {
+                saved = inboundRepository.save(entity);
+                savedId = saved.getId();
+            } catch (Exception e) {
+                throw new RuntimeException("Lỗi khi lưu đơn nhập: " + e.getMessage(), e);
+            }
 
             for (MultipartFile file : attachments) {
                 String originFileName = file.getOriginalFilename();
-                try {
+                FileUploadResult result = new FileUploadResult();
+                result.setFileName(originFileName);
 
-                    fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, String.valueOf(savedId), file);
+                String fileKey = UUID.randomUUID().toString() + "_" + originFileName;
+                String filePath = savedId+"/"+fileKey;
+                try {
+                    fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET,filePath, file);
+                    result.setUploaded(true);
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    result.setUploaded(false);
+                    result.setErrorMessage("Upload failed: " + e.getMessage());
+                    results.add(result);
+                    continue;
                 }
+
                 try {
                     InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
                             .fileName(originFileName)
                             .inboundId(savedId)
-                            .filePath(savedId.toString())
+                            .filePath(filePath)
                             .build();
+
                     inboundAttachmentRepository.save(inboundAttachment);
+                    result.setSavedToDB(true);
                 } catch (Exception e) {
+                    result.setSavedToDB(false);
+                    result.setErrorMessage("Database save failed: " + e.getMessage());
+
                     try {
-                        fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, savedId.toString(), originFileName);
+                        fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, originFileName);
                     } catch (Exception ex) {
-                        throw new RuntimeException(ex);
+                        result.setErrorMessage(result.getErrorMessage() + ". Failed to rollback upload: " + ex.getMessage());
                     }
                 }
+                results.add(result);
             }
 
-            return mapToResponse(saved);
         } catch (Exception e) {
             throw new RuntimeException("Tạo đơn nhập thất bại: " + e.getMessage(), e);
         }
+        return mapToResponse(saved,results);
     }
 
     @Override
@@ -224,7 +246,19 @@ public class InboundServiceImpl implements InboundService {
         setIfNotNull(dto.getQuantity(), entity::setQuantity);
         setIfNotNull(dto.getStatus(), entity::setStatus);
 
-        return mapToResponse(inboundRepository.save(entity));
+        try{
+            InboundEntity saved = inboundRepository.save(entity);
+            List<InboundAttachmentEntity> inboundAttachments = entity.getAttachments();
+            int i = 0;
+            for(InboundAttachmentEntity inboundAttachment: inboundAttachments){
+                if(dto.getAttachments().get(i) != null ){
+
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return mapToResponse(inboundRepository.save(entity), null);
     }
 
 
@@ -248,7 +282,7 @@ public class InboundServiceImpl implements InboundService {
         return;
     }
 
-    private InboundResponse mapToResponse(InboundEntity e) {
+    private InboundResponse mapToResponse(InboundEntity e,List<FileUploadResult> results) {
 
         return InboundResponse.builder()
                 .id(e.getId())
@@ -260,6 +294,7 @@ public class InboundServiceImpl implements InboundService {
                 .status(e.getStatus())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
+                .results(results)
                 .build();
     }
 

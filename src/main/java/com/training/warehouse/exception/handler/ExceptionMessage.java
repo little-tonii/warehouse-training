@@ -14,4 +14,5 @@ public class ExceptionMessage {
     public static final String CANNOT_DELETE_INBOUND = "cannot delete inbound because it has outbound";
     public static final String OUTBOUND_NOT_FOUND = "outbound not found";
     public static final String OUTBOUND_CONFIRMED = "outbound was confirmed";
+    public static final String QUANTITY_FILE_IS_INVALID = "quantity file is invalid";
 }
