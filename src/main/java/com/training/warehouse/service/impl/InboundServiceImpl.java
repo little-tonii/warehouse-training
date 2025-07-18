@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
@@ -21,7 +22,7 @@ import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
-public class InboundServiceImpl implements InboundService{
+public class InboundServiceImpl implements InboundService {
 
     private final FileStoreService fileStoreService;
     private final InboundRepository inboundRepository;
@@ -29,8 +30,9 @@ public class InboundServiceImpl implements InboundService{
     private final InboundAttachmentRepository inboundAttachmentRepository;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteInboundById(long inboundId) {
-        Optional<InboundEntity> inboundResult  = inboundRepository.findById(inboundId);
+        Optional<InboundEntity> inboundResult = inboundRepository.findById(inboundId);
         if (!inboundResult.isPresent()) {
             throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
         }
@@ -41,11 +43,14 @@ public class InboundServiceImpl implements InboundService{
         InboundEntity inbound = inboundResult.get();
         List<InboundAttachmentEntity> attachments = inbound.getAttachments();
         attachments.forEach(attachment -> {
-            fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, attachment.getFilePath(), attachment.getFileName());
             inboundAttachmentRepository.deleteById(attachment.getId());
         });
         inboundRepository.deleteById(inboundId);
+        attachments.forEach(attachment -> {
+            fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, attachment.getFilePath(),
+                    attachment.getFileName());
+        });
         return;
     }
-    
+
 }
