@@ -74,7 +74,6 @@ public class OutboundServiceImpl implements OutboundService {
         byte[] mergedFile = this.pdfService.mergeWithBookmarks(files);
         String filePath = UUID.randomUUID().toString();
         String fileName = String.format("outbound-%s-confirmed", outbound.getId());
-        this.fileStoreService.uploadFile(FileStoreService.OUTBOUND_BUCKET, filePath, fileName, mergedFile);
         this.outboundAttachmentRepository
                 .save(OutboundAttachmentEntity.builder()
                         .filePath(filePath)
@@ -82,6 +81,7 @@ public class OutboundServiceImpl implements OutboundService {
                         .build());
         outbound.setConfirmed(true);
         this.outboundRepository.save(outbound);
+        this.fileStoreService.uploadFile(FileStoreService.OUTBOUND_BUCKET, filePath, fileName, mergedFile);
         return mergedFile;
     }
 
