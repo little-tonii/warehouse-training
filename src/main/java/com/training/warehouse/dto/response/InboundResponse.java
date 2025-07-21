@@ -25,4 +25,5 @@ public class InboundResponse {
     private long quantity;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<FileUploadResult> results;
 }

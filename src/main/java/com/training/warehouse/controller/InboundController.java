@@ -4,10 +4,10 @@ import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
 import com.training.warehouse.dto.response.InboundSummaryResponse;
+import com.training.warehouse.exception.BadRequestException;
+import jakarta.validation.constraints.Max;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -30,13 +29,13 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
+
 import jakarta.validation.constraints.Min;
-import lombok.AllArgsConstructor;
 
 
 @RestController
@@ -48,57 +47,57 @@ public class InboundController {
     private final InboundStatisticService inboundStatisticService;
 
     @io.swagger.v3.oas.annotations.Operation(
-        method = "DELETE",
-        summary = "delete inbound by id",
-        security = {
-            @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"),
-        },
-        parameters = {
-            @io.swagger.v3.oas.annotations.Parameter(
-                name = "id",
-                in = ParameterIn.PATH,
-                required = true,
-                schema = @Schema(type = "integer", format = "int64", minimum = "1")
-            )
-        },
-        responses = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "204",
-                description = "inbound deleted successfully"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "400",
-                description = "invalid request data",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/json",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
-                )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "401",
-                description = "unauthorized",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/json",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
-                )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "inbound not found",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/json",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
-                )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "500",
-                description = "internal server error",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/json",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
-                )
-            )
-        }
+            method = "DELETE",
+            summary = "delete inbound by id",
+            security = {
+                    @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"),
+            },
+            parameters = {
+                    @io.swagger.v3.oas.annotations.Parameter(
+                            name = "id",
+                            in = ParameterIn.PATH,
+                            required = true,
+                            schema = @Schema(type = "integer", format = "int64", minimum = "1")
+                    )
+            },
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "204",
+                            description = "inbound deleted successfully"
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "400",
+                            description = "invalid request data",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    mediaType = "application/json",
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "401",
+                            description = "unauthorized",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    mediaType = "application/json",
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "404",
+                            description = "inbound not found",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    mediaType = "application/json",
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "500",
+                            description = "internal server error",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    mediaType = "application/json",
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                            )
+                    )
+            }
     )
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteById(@PathVariable @Min(value = 1, message = "inboundId must be greater than 0") long id) {
@@ -112,7 +111,7 @@ public class InboundController {
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
-                            mediaType = "application/json",
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                             schema = @Schema(implementation = InboundCreateRequest.class)
                     )
             ),
@@ -175,8 +174,8 @@ public class InboundController {
                     )
             }
     )
-    @PostMapping
-    public ResponseEntity<?> createInbound(@Valid @RequestBody InboundCreateRequest request) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createInbound(@ModelAttribute @Valid InboundCreateRequest request) {
         return ResponseEntity.ok(inboundService.createInbound(request));
     }
 
@@ -186,17 +185,19 @@ public class InboundController {
             parameters = {
                     @Parameter(
                             name = "id",
-                            required = true,
                             in = ParameterIn.PATH,
+                            required = true,
                             example = "123"
                     )
             },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = InboundCreateRequest.class)
-                    )
+                    content = {
+                            @Content(
+                                    mediaType = "multipart/form-data",
+                                    schema = @Schema(implementation = InboundUpdateRequest.class)
+                            )
+                    }
             ),
             responses = {
                     @ApiResponse(
@@ -249,12 +250,12 @@ public class InboundController {
                     )
             }
     )
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateInbound(@PathVariable Long id, @Valid @RequestBody InboundUpdateRequest request) {
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateInbound(@PathVariable Long id,
+                                           @ModelAttribute @Valid InboundUpdateRequest request) {
+
         return ResponseEntity.ok(inboundService.updateInbound(id, request));
     }
-
-
 
 
     @Operation(
@@ -318,15 +319,22 @@ public class InboundController {
         return inboundStatisticService.getInboundSummary(pageable);
     }
 
+    @GetMapping("/inbound-summary-by-month")
+    public InboundSummaryResponse getInboundSummaryByMonth(
+            @RequestParam(name = "startMonth") @Min(1) @Max(12) int startMonth,
+            @RequestParam(name = "endMonth") @Min(1) @Max(12) int endMonth) {
+
+        if (startMonth > endMonth) {
+            throw new BadRequestException("Start month cannot be greater than end month");
+        }
+
+        return inboundStatisticService.getInboundSummaryByMonth(startMonth, endMonth);
+    }
+
     @Operation(
             summary = "Import Inbound Data from CSV file",
             method = "POST",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    content = @Content(
-                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(type = "string", format = "binary")
-                    )
-            ),
+
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -341,7 +349,8 @@ public class InboundController {
             }
     )
     @PostMapping(value = "/import-inbound-data", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> importInboundDataFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> importInboundDataFile(@Parameter(description = "CSV file", content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE))
+                                                   @RequestParam("file") MultipartFile file) {
         Map<String, Object> result = inboundService.importFromCsv(file);
         return ResponseEntity.ok(result);
     }

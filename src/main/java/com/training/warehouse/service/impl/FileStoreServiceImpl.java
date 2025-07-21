@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import io.minio.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,13 +14,6 @@ import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.service.FileStoreService;
 
-import io.minio.BucketExistsArgs;
-import io.minio.GetObjectArgs;
-import io.minio.GetPresignedObjectUrlArgs;
-import io.minio.MakeBucketArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
-import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 
 @Service
@@ -39,6 +33,12 @@ public class FileStoreServiceImpl implements FileStoreService {
     public void deleteFile(String bucketName, String filePath, String fileName) {
         String objectName = filePath.endsWith("/") ? filePath + fileName : filePath + "/" + fileName;
         try {
+            minioClient.statObject( //kiểm tra tồn tại file
+                    StatObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .build()
+            );
             minioClient.removeObject(RemoveObjectArgs.builder()
                     .bucket(bucketName)
                     .object(objectName)

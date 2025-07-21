@@ -18,4 +18,9 @@ public class InboundStatisticServiceImpl implements InboundStatisticService {
         return inboundRepository.findInboundSummaryByProductTypeAndSupplierCd(pageable);
 
     }
+
+    @Override
+    public InboundSummaryResponse getInboundSummaryByMonth(int startMonth, int endMonth) {
+        return null;
+    }
 }
