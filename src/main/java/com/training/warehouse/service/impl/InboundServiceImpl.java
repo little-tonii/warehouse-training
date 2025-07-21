@@ -150,8 +150,9 @@ public class InboundServiceImpl implements InboundService {
             throw new RuntimeException("Failed to read CSV file", e);
         }
         Map<String, Object> result = new HashMap<>();
-        result.put("successCount", validEntities.size() + " hàng được import");
-        result.put("errorMessages", errors);
+        if(errors.isEmpty())
+            result.put("success", validEntities.size() + " hàng được import");
+        else result.put("errorMessages", errors);
 
         return result;
     }
