@@ -67,6 +67,7 @@ public class InboundServiceImpl implements InboundService {
     public Map<String, Object> importFromCsv(MultipartFile file) {
         List<InboundEntity> validEntities = new ArrayList<>();
         List<String> errors = new ArrayList<>();
+        UserEntity currUser = SecurityUtil.getCurrentUser();
         try (Reader reader = new InputStreamReader(file.getInputStream());
              CSVReader csvReader = new CSVReader(reader)) {
             List<String[]> allRows = csvReader.readAll();
@@ -127,6 +128,7 @@ public class InboundServiceImpl implements InboundService {
                             .quantity(dto.getQuantity())
                             .productType(ProductType.fromString(dto.getProductType()))
                             .receiveDate(dto.getReceiveDate())
+                            .user(currUser)
                             .build();
 
                     validEntities.add(entity);

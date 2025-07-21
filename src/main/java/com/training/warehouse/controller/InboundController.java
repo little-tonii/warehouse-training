@@ -3,9 +3,11 @@ package com.training.warehouse.controller;
 import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
+import com.training.warehouse.dto.response.InboundSummaryMonthProjection;
 import com.training.warehouse.dto.response.InboundSummaryResponse;
 import com.training.warehouse.exception.BadRequestException;
 import jakarta.validation.constraints.Max;
+import lombok.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,6 +34,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Year;
 import java.util.List;
 import java.util.Map;
 
@@ -319,16 +322,32 @@ public class InboundController {
         return inboundStatisticService.getInboundSummary(pageable);
     }
 
+    @Operation(
+            parameters = {
+                    @Parameter(name = "startMonth", example = "3"),
+                    @Parameter(name = "endMonth", example = "5"),
+                    @Parameter(name = "year", example = "2025")
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    array = @ArraySchema(schema = @Schema(implementation = InboundSummaryMonthProjection.class))
+                            ))
+            })
     @GetMapping("/inbound-summary-by-month")
-    public InboundSummaryResponse getInboundSummaryByMonth(
-            @RequestParam(name = "startMonth") @Min(1) @Max(12) int startMonth,
-            @RequestParam(name = "endMonth") @Min(1) @Max(12) int endMonth) {
+    public ResponseEntity<?> getInboundSummaryByMonth(
+            @RequestParam(name = "startMonth", defaultValue = "1") @Min(1) @Max(12)  int startMonth,
+            @RequestParam(name = "endMonth", defaultValue = "12") @Min(1) @Max(12) int endMonth,
+            @RequestParam(name = "year") Integer year) {
 
         if (startMonth > endMonth) {
             throw new BadRequestException("Start month cannot be greater than end month");
         }
-
-        return inboundStatisticService.getInboundSummaryByMonth(startMonth, endMonth);
+        if (year == null) {
+            year = Year.now().getValue();
+        }
+        return ResponseEntity.ok(inboundStatisticService.getInboundSummaryByMonth(startMonth, endMonth, year));
     }
 
     @Operation(
