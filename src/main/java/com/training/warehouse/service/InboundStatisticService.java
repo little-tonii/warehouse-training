@@ -6,4 +6,6 @@ import org.springframework.data.domain.Pageable;
 
 public interface InboundStatisticService {
     Page<InboundSummaryResponse> getInboundSummary(Pageable pageable);
+
+    InboundSummaryResponse getInboundSummaryByMonth(int startMonth,int endMonth);
 }

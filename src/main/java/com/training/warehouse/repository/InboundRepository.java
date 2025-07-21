@@ -28,5 +28,7 @@ public interface InboundRepository extends JpaRepository<InboundEntity, Long> {
             """)
     Page<InboundSummaryResponse> findInboundSummaryByProductTypeAndSupplierCd(Pageable pageable);
 
+//    InboundSummaryResponse findInbSummaryByMonth(int startMonth,int endMonth);
+
     Optional<InboundEntity> findByInvoice(String invoice) ;
 }
