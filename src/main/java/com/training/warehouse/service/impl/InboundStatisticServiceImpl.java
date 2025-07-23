@@ -24,35 +24,8 @@ public class InboundStatisticServiceImpl implements InboundStatisticService {
     }
 
     @Override
-    public List<InboundSummaryMonthProjection> getInboundSummaryByMonth(int startMonth, int endMonth, int year) {
+    public List<InboundSummaryMonthProjection> getInboundSummaryByMonth(Integer startMonth, Integer endMonth, int year) {
         return inboundRepository.findInbSummaryByMonth(startMonth,endMonth,year);
     }
 
-    public static Map<Integer, List<InboundSummaryPerMonth>> extractAndGroupDataByMonth(List<InboundSummaryMonthProjection> dataSummary) {
-        if (dataSummary == null) return null;
-        Map<Integer, List<InboundSummaryPerMonth>> groupedDataByMonth = new LinkedHashMap<>();
-
-        for (InboundSummaryMonthProjection inb : dataSummary) {
-            Integer month = inb.getMonth();
-            if (!groupedDataByMonth.containsKey(month)) {
-                groupedDataByMonth.put(month, new ArrayList<>());
-            }
-
-            groupedDataByMonth.get(month).add(new InboundSummaryPerMonth(inb.getMonth(), inb.getProductType(), inb.getSupplierCd(), inb.getTotalQuantity()));
-        }
-        return groupedDataByMonth;
-    }
-
-    public static Map<String,Map<String, Long>> groupDataBySupplierAndProductType(List<InboundSummaryPerMonth> data){
-        Map<String,Map<String,Long>> groupedData = new LinkedHashMap<>();
-        for (InboundSummaryPerMonth datum : data) {
-            String supplierCode = datum.getSupplierCd();
-            if (!groupedData.containsKey(supplierCode)) groupedData.put(supplierCode, new TreeMap<>());
-
-            Map<String, Long> productMap = groupedData.get(supplierCode);
-            String productType = datum.getProductType();
-            productMap.put(productType, productMap.getOrDefault(productType, 0L) + datum.getTotalQuantity());
-        }
-        return groupedData;
-    }
 }

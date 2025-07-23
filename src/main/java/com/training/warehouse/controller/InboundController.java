@@ -1,15 +1,24 @@
 package com.training.warehouse.controller;
 
+import com.training.warehouse.common.util.FileUtil;
+import com.training.warehouse.common.util.InboundUtil;
 import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
 import com.training.warehouse.dto.response.InboundSummaryMonthProjection;
+import com.training.warehouse.dto.response.InboundSummaryPerMonth;
 import com.training.warehouse.dto.response.InboundSummaryResponse;
 import com.training.warehouse.exception.BadRequestException;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.constraints.Max;
 import lombok.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,10 +39,13 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Year;
 import java.util.List;
 import java.util.Map;
@@ -49,14 +61,14 @@ public class InboundController {
     private final InboundService inboundService;
     private final InboundStatisticService inboundStatisticService;
 
-    @io.swagger.v3.oas.annotations.Operation(
+    @Operation(
             method = "DELETE",
             summary = "delete inbound by id",
             security = {
-                    @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"),
+                    @SecurityRequirement(name = "bearerAuth"),
             },
             parameters = {
-                    @io.swagger.v3.oas.annotations.Parameter(
+                    @Parameter(
                             name = "id",
                             in = ParameterIn.PATH,
                             required = true,
@@ -64,40 +76,40 @@ public class InboundController {
                     )
             },
             responses = {
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    @ApiResponse(
                             responseCode = "204",
                             description = "inbound deleted successfully"
                     ),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    @ApiResponse(
                             responseCode = "400",
                             description = "invalid request data",
-                            content = @io.swagger.v3.oas.annotations.media.Content(
+                            content = @Content(
                                     mediaType = "application/json",
-                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                                    schema = @Schema(implementation = ExceptionResponse.class)
                             )
                     ),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    @ApiResponse(
                             responseCode = "401",
                             description = "unauthorized",
-                            content = @io.swagger.v3.oas.annotations.media.Content(
+                            content = @Content(
                                     mediaType = "application/json",
-                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                                    schema = @Schema(implementation = ExceptionResponse.class)
                             )
                     ),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    @ApiResponse(
                             responseCode = "404",
                             description = "inbound not found",
-                            content = @io.swagger.v3.oas.annotations.media.Content(
+                            content = @Content(
                                     mediaType = "application/json",
-                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                                    schema = @Schema(implementation = ExceptionResponse.class)
                             )
                     ),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    @ApiResponse(
                             responseCode = "500",
                             description = "internal server error",
-                            content = @io.swagger.v3.oas.annotations.media.Content(
+                            content = @Content(
                                     mediaType = "application/json",
-                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                                    schema = @Schema(implementation = ExceptionResponse.class)
                             )
                     )
             }
@@ -108,10 +120,10 @@ public class InboundController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @io.swagger.v3.oas.annotations.Operation(
+    @Operation(
             method = "POST",
             summary = "create inbound",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            requestBody = @RequestBody(
                     required = true,
                     content = @Content(
                             mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
@@ -193,7 +205,7 @@ public class InboundController {
                             example = "123"
                     )
             },
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            requestBody = @RequestBody(
                     required = true,
                     content = {
                             @Content(
@@ -324,30 +336,81 @@ public class InboundController {
 
     @Operation(
             parameters = {
-                    @Parameter(name = "startMonth", example = "3"),
-                    @Parameter(name = "endMonth", example = "5"),
-                    @Parameter(name = "year", example = "2025")
+                    @Parameter(name = "startMonth", example = "3" ,schema = @Schema(type = "integer")),
+                    @Parameter(name = "endMonth", example = "5",schema = @Schema(type = "integer")),
+                    @Parameter(name = "year", example = "2025",schema = @Schema(type = "integer"))
             },
             responses = {
                     @ApiResponse(responseCode = "200",
                             content = @Content(
-                                    mediaType = "application/json",
-                                    array = @ArraySchema(schema = @Schema(implementation = InboundSummaryMonthProjection.class))
+                                    mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                    schema = @Schema(type = "string", format = "binary")
                             ))
             })
-    @GetMapping("/inbound-summary-by-month")
-    public ResponseEntity<?> getInboundSummaryByMonth(
-            @RequestParam(name = "startMonth", defaultValue = "1") @Min(1) @Max(12)  int startMonth,
+    @GetMapping(value = "/inbound-summary-by-month",
+            produces = "*/*")
+    public ResponseEntity<byte[]> getInboundSummaryByMonth(
+            @RequestParam(name = "startMonth", defaultValue = "1") @Min(1) @Max(12) int startMonth,
             @RequestParam(name = "endMonth", defaultValue = "12") @Min(1) @Max(12) int endMonth,
             @RequestParam(name = "year") Integer year) {
 
+        System.out.println("startMonth = " + startMonth);
+        System.out.println("endMonth = " + endMonth);
+        System.out.println("year = " + year);
         if (startMonth > endMonth) {
             throw new BadRequestException("Start month cannot be greater than end month");
         }
         if (year == null) {
             year = Year.now().getValue();
         }
-        return ResponseEntity.ok(inboundStatisticService.getInboundSummaryByMonth(startMonth, endMonth, year));
+        List<InboundSummaryMonthProjection> statisticData = inboundStatisticService.getInboundSummaryByMonth(startMonth, endMonth, year);
+
+        System.out.println(statisticData);
+        Map<Integer, List<InboundSummaryPerMonth>> groupdDataByMonth = InboundUtil.extractAndGroupDataByMonth(statisticData);
+        try (XSSFWorkbook workbook = FileUtil.createSummaryWorkbook(groupdDataByMonth);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            XSSFSheet sheet = workbook.getSheet("summary");
+
+            int idx = 1;
+            int col1 = 4, col2 = 12, row1, row2;
+            int firstRow;
+            int endRow;
+            int month;
+            while (idx <= sheet.getLastRowNum()) {
+                Row row = sheet.getRow(idx);
+                if (row == null) {
+                    idx++;
+                    continue;
+                }
+                XSSFCell cell = (XSSFCell) row.getCell(0);
+                firstRow = idx;
+                row1 = idx;
+                month = Integer.parseInt(cell.getRawValue());
+                if (cell == null || cell.getCellType() == CellType.BLANK || cell.toString().trim().isEmpty()) {
+                    idx++;
+                    continue;
+                }
+                endRow = idx - 1;
+                row2 = idx - 1;
+                FileUtil.drawBarChart(workbook, firstRow, endRow, col1, row1, col2, row2, month);
+            }
+            workbook.write(out);
+            byte[] fileContent = out.toByteArray();
+
+            String fileName = URLEncoder.encode("InboundSummary-RPT2.xlsx", StandardCharsets.UTF_8);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(
+                    MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDisposition(ContentDisposition.attachment().filename(fileName).build());
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(fileContent.length)
+                    .body(fileContent);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Operation(
