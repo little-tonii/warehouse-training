@@ -11,7 +11,7 @@ public class DelayedOutboundJob {
 
     private final OutboundService outboundService;
 
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "* * */6 * * *")
     public void checkAndSendDelayedOrders() {
         outboundService.alertDelayedOutbounds();
     }

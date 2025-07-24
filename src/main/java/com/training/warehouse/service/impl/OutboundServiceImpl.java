@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.training.warehouse.dto.response.RiskDelayedOutboundsProjection;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.repository.UserRepository;
 import com.training.warehouse.service.MailService;
@@ -46,15 +47,15 @@ public class OutboundServiceImpl implements OutboundService {
     @Override
     @Transactional
     public void alertDelayedOutbounds() {
-        List<OutboundEntity> delayedOutbounds = outboundRepository.findAllRiskDelayedOutbounds();
-        for(OutboundEntity delayOutbound : delayedOutbounds){
+        List<RiskDelayedOutboundsProjection> delayedOutbounds = outboundRepository.findAllRiskDelayedOutbounds();
+        for (RiskDelayedOutboundsProjection delayOutbound : delayedOutbounds) {
 
             LocalDateTime expectedDate = delayOutbound.getExpectedShippingDate();
-            UserEntity user = delayOutbound.getUser();
-            System.out.println(user);
-            String content = "Outbound is expected at "+expectedDate;
-//            mailService.sendMail(user.getEmail(),"Risk Delayed Outbound",content);
-            System.out.println("Gửi mail tới user: "+user.getId()+" "+user.getEmail());
+            String userEmail = delayOutbound.getUserEmail();
+
+            String content = "Outbound is expected at " + expectedDate.toString();
+            mailService.sendMail(userEmail, "Risk Delayed Outbound", content);
+            System.out.println("Gửi mail tới user: " + userEmail);
         }
     }
 //

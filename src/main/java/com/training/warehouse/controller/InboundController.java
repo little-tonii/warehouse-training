@@ -50,6 +50,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Year;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import jakarta.validation.constraints.Min;
 
@@ -349,7 +350,7 @@ public class InboundController {
                             ))
             })
     @GetMapping(value = "/inbound-summary-by-month",
-            produces = "*/*")
+            produces = "application/xlsx")
     public ResponseEntity<byte[]> getInboundSummaryByMonth(
             @RequestParam(name = "startMonth", defaultValue = "1") @Min(1) @Max(12) int startMonth,
             @RequestParam(name = "endMonth", defaultValue = "12") @Min(1) @Max(12) int endMonth,
@@ -372,29 +373,61 @@ public class InboundController {
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             XSSFSheet sheet = workbook.getSheet("summary");
 
+            int col1 = 4, col2 = 12;
             int idx = 1;
-            int col1 = 4, col2 = 12, row1, row2;
-            int firstRow;
-            int endRow;
-            int month;
-            while (idx <= sheet.getLastRowNum()) {
+            int firstRow = -1;
+            int lastRow = sheet.getLastRowNum();
+            Integer currentMonth = null;
+            int chartBaseRow = 1;
+
+            while (idx <= lastRow) {
                 Row row = sheet.getRow(idx);
                 if (row == null) {
                     idx++;
                     continue;
                 }
-                XSSFCell cell = (XSSFCell) row.getCell(0);
-                firstRow = idx;
-                row1 = idx;
-                month = Integer.parseInt(cell.getRawValue());
-                if (cell == null || cell.getCellType() == CellType.BLANK || cell.toString().trim().isEmpty()) {
-                    idx++;
-                    continue;
+
+                Cell cell = row.getCell(0);
+                if (cell != null && cell.getCellType() == CellType.NUMERIC) {
+                    int month = (int) cell.getNumericCellValue();
+
+                    if (currentMonth != null && !Objects.equals(currentMonth, month)) {
+                        int endRow = idx - 1;
+                        int chartStartRow = chartBaseRow;
+                        int chartEndRow = chartStartRow + 9;
+
+                        FileUtil.drawBarChart(
+                                workbook,
+                                firstRow, endRow,
+                                col1, chartStartRow,
+                                col2, chartEndRow,
+                                currentMonth
+                        );
+
+                        chartBaseRow = chartEndRow + 2;
+                        firstRow = idx;
+                    } else if (currentMonth == null) {
+                        firstRow = idx;
+                    }
+                    currentMonth = month;
                 }
-                endRow = idx - 1;
-                row2 = idx - 1;
-                FileUtil.drawBarChart(workbook, firstRow, endRow, col1, row1, col2, row2, month);
+                idx++;
             }
+
+            if (currentMonth != null && firstRow <= lastRow) {
+                int endRow = lastRow;
+                int chartStartRow = chartBaseRow;
+                int chartEndRow = chartStartRow + 9;
+
+                FileUtil.drawBarChart(
+                        workbook,
+                        firstRow, endRow,
+                        col1, chartStartRow,
+                        col2, chartEndRow,
+                        currentMonth
+                );
+            }
+
             workbook.write(out);
             byte[] fileContent = out.toByteArray();
 
@@ -410,7 +443,7 @@ public class InboundController {
                     .contentLength(fileContent.length)
                     .body(fileContent);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("lỗi: "+e);
         }
     }
 
