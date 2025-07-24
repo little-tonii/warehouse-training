@@ -9,6 +9,7 @@ import com.training.warehouse.dto.response.InboundSummaryMonthProjection;
 import com.training.warehouse.dto.response.InboundSummaryPerMonth;
 import com.training.warehouse.dto.response.InboundSummaryResponse;
 import com.training.warehouse.exception.BadRequestException;
+import com.training.warehouse.service.MailService;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.constraints.Max;
 import lombok.Value;
@@ -60,7 +61,7 @@ import jakarta.validation.constraints.Min;
 public class InboundController {
     private final InboundService inboundService;
     private final InboundStatisticService inboundStatisticService;
-
+    private final MailService mailService;
     @Operation(
             method = "DELETE",
             summary = "delete inbound by id",
@@ -435,5 +436,28 @@ public class InboundController {
                                                    @RequestParam("file") MultipartFile file) {
         Map<String, Object> result = inboundService.importFromCsv(file);
         return ResponseEntity.ok(result);
+    }
+
+    @Operation(
+            summary = "send alert",
+            method= "GET",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "object")
+                            )
+                    )
+            }
+    )
+    @GetMapping("/send")
+    public ResponseEntity<?> sendMail(
+            @RequestParam String to,
+            @RequestParam String subject,
+            @RequestParam String content
+    ) {
+        mailService.sendMail(to, subject, content);
+        return ResponseEntity.ok("Đã gửi mail test tới " + to);
     }
 }

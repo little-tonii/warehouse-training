@@ -1,10 +1,14 @@
 package com.training.warehouse.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.training.warehouse.entity.UserEntity;
+import com.training.warehouse.repository.UserRepository;
+import com.training.warehouse.service.MailService;
 import org.springframework.stereotype.Service;
 
 import com.training.warehouse.entity.InboundAttachmentEntity;
@@ -21,11 +25,14 @@ import com.training.warehouse.service.OutboundService;
 import com.training.warehouse.service.PdfService;
 
 import lombok.AllArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
 public class OutboundServiceImpl implements OutboundService {
-//    private final OutboundRepository outboundRepository;
+    private final OutboundRepository outboundRepository;
+    private final MailService mailService;
+    private final UserRepository userRepository;
 //    private final InboundRepository inboundRepository;
 //    private final InboundAttachmentRepository inboundAttachmentRepository;
 //    private final FileStoreService fileStoreService;
@@ -36,7 +43,20 @@ public class OutboundServiceImpl implements OutboundService {
         return new byte[0];
     }
 
+    @Override
+    @Transactional
+    public void alertDelayedOutbounds() {
+        List<OutboundEntity> delayedOutbounds = outboundRepository.findAllRiskDelayedOutbounds();
+        for(OutboundEntity delayOutbound : delayedOutbounds){
 
+            LocalDateTime expectedDate = delayOutbound.getExpectedShippingDate();
+            UserEntity user = delayOutbound.getUser();
+            System.out.println(user);
+            String content = "Outbound is expected at "+expectedDate;
+//            mailService.sendMail(user.getEmail(),"Risk Delayed Outbound",content);
+            System.out.println("Gửi mail tới user: "+user.getId()+" "+user.getEmail());
+        }
+    }
 //
 //    @Override
 //    public byte[] confirmOutboundById(long outboundId) {

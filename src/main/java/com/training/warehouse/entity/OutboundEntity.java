@@ -42,7 +42,7 @@ public class OutboundEntity extends BaseEntity{
     @Column(nullable = false, name = "expected_shipping_date")
     private LocalDateTime expectedShippingDate;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "user_id", nullable = false, referencedColumnName = "id")
     private UserEntity user;
 
