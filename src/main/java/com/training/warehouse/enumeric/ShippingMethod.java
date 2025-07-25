@@ -18,7 +18,7 @@ public enum ShippingMethod {
 
     public static ShippingMethod fromCode(String code) {
         for (ShippingMethod method : ShippingMethod.values()) {
-            if (method.code == code) {
+            if (method.code.equals(code)) {
                 return method;
             }
         }
