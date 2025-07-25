@@ -18,7 +18,7 @@ public interface OutboundRepository extends JpaRepository<OutboundEntity, Long> 
 
     @Query(value = """
     SELECT  o.expected_shipping_date AS expectedShippingDate,
-            u.email AS userEmail
+            u.email AS userEmail,
             o.inb_id AS inboundID
     FROM outbounds o
     JOIN users u ON u.id = o.user_id

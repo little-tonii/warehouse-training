@@ -373,7 +373,7 @@ public class InboundController {
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             XSSFSheet sheet = workbook.getSheet("summary");
 
-            int col1 = 4, col2 = 12;
+            int col1 = 4, col2 = 14;
             int idx = 1;
             int firstRow = -1;
             int lastRow = sheet.getLastRowNum();
@@ -394,7 +394,7 @@ public class InboundController {
                     if (currentMonth != null && !Objects.equals(currentMonth, month)) {
                         int endRow = idx - 1;
                         int chartStartRow = chartBaseRow;
-                        int chartEndRow = chartStartRow + 9;
+                        int chartEndRow = chartStartRow + 12;
 
                         FileUtil.drawBarChart(
                                 workbook,

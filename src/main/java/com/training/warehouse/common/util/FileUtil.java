@@ -93,11 +93,41 @@ public class FileUtil {
         XDDFValueAxis yAxis = chart.createValueAxis(AxisPosition.BOTTOM);
         yAxis.setTitle("Quantity");
 
-        XDDFDataSource<String> countries = XDDFDataSourcesFactory.fromStringCellRange(sheet, new CellRangeAddress(firstRow, endRow, 1, 1));
-        XDDFNumericalDataSource<Double> airconData = XDDFDataSourcesFactory.fromNumericCellRange(sheet, new CellRangeAddress(firstRow, endRow, 2, 2));
-        XDDFNumericalDataSource<Double> sparePartData = XDDFDataSourcesFactory.fromNumericCellRange(sheet, new CellRangeAddress(firstRow, endRow, 3, 3));
+        // Tạo cột ảo và thêm dữ liệu
+        List<String> extendedCountries = new ArrayList<>();
+        List<Double> extendedAirconData = new ArrayList<>();
+        List<Double> extendedSparePartData = new ArrayList<>();
 
-        XDDFChartData data = chart.createData(ChartTypes.BAR3D, xAxis, yAxis);
+        extendedCountries.add("");
+        extendedAirconData.add(0.0);
+        extendedSparePartData.add(0.0);
+
+        for (int i = firstRow; i <= endRow; i++) {
+            Row row = sheet.getRow(i);
+            if (row != null) {
+                String country = row.getCell(1) != null ? row.getCell(1).getStringCellValue() : "";
+                Double aircon = row.getCell(2) != null ? row.getCell(2).getNumericCellValue() : 0.0;
+                Double sparePart = row.getCell(3) != null ? row.getCell(3).getNumericCellValue() : 0.0;
+                extendedCountries.add(country);
+                extendedAirconData.add(aircon);
+                extendedSparePartData.add(sparePart);
+            }
+        }
+
+        extendedCountries.add("");
+        extendedAirconData.add(0.0);
+        extendedSparePartData.add(0.0);
+
+        XDDFDataSource<String> countries = XDDFDataSourcesFactory.fromArray(extendedCountries.toArray(new String[0]));
+        XDDFNumericalDataSource<Double> airconData = XDDFDataSourcesFactory.fromArray(extendedAirconData.toArray(new Double[0]));
+        XDDFNumericalDataSource<Double> sparePartData = XDDFDataSourcesFactory.fromArray(extendedSparePartData.toArray(new Double[0]));
+        //  //
+
+        XDDFChartData data = chart.createData(ChartTypes.BAR, xAxis, yAxis);
+        // cột đứng
+        XDDFBarChartData bar = (XDDFBarChartData) data;
+        bar.setBarDirection(BarDirection.COL);
+        bar.setBarGrouping(BarGrouping.CLUSTERED);
 
         XDDFChartData.Series airconSeries = data.addSeries(countries, airconData);
         XDDFChartData.Series sparePartSeries = data.addSeries(countries, sparePartData);
