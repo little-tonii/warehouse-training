@@ -1,6 +1,8 @@
 package com.training.warehouse.service.impl;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.URLConnection;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -109,6 +111,40 @@ public class FileStoreServiceImpl implements FileStoreService {
                             .expiry(5, TimeUnit.MINUTES)
                             .extraQueryParams(
                                     Map.of("response-content-disposition", "attachment; filename=\"" + fileName + "\""))
+                            .build());
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void uploadFile(String bucketName, String filePath, String fileName, byte[] file) {
+        if (fileName == null || fileName.isBlank()) {
+            throw new BadRequestException(ExceptionMessage.FILENAME_IS_NOT_VALID);
+        }
+        String cleanedFileName = Paths.get(fileName).getFileName().toString();
+        if (!cleanedFileName.matches("^[a-zA-Z0-9._-]{1,255}$")) {
+            throw new BadRequestException(ExceptionMessage.FILENAME_IS_NOT_VALID);
+        }
+        if (filePath.contains("..")) {
+            throw new BadRequestException(ExceptionMessage.FILE_PATH_IS_NOT_VALID);
+        }
+        String contentType = URLConnection.guessContentTypeFromName(cleanedFileName);
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new BadRequestException(ExceptionMessage.FILETYPE_NOT_ALLOWED);
+        }
+        String objectName = filePath.endsWith("/") ? filePath + cleanedFileName : filePath + "/" + cleanedFileName;
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(file)) {
+            boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+            if (!exists) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+            }
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .stream(bais, file.length, -1)
+                            .contentType(contentType)
                             .build());
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
