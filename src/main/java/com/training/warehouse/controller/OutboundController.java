@@ -1,6 +1,5 @@
 package com.training.warehouse.controller;
 
-import com.training.warehouse.dto.request.AuthLoginRequest;
 import com.training.warehouse.dto.request.CreateOutboundRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
 import com.training.warehouse.entity.UserEntity;
@@ -12,6 +11,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
+
+import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -281,5 +283,78 @@ public class OutboundController {
         return ResponseEntity.status(HttpStatus.CREATED).body(
             this.outboundService.createOutbound(user, request)
         );
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "DELETE",
+        summary = "delete outbound",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(
+                name = "bearerAuth"
+            ),
+        },
+        parameters = {
+            @io.swagger.v3.oas.annotations.Parameter(
+                name = "id",
+                in = ParameterIn.PATH,
+                required = true,
+                schema = @Schema(
+                    type = "integer",
+                    format = "int64",
+                    minimum = "1"
+                )
+            ),
+        },
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "204",
+                description = "no content"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "not found",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+        }
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable @Min(value = 1, message = "outboundId must be greater than 0") long id) {
+        this.outboundService.deleteOutboundById(id);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

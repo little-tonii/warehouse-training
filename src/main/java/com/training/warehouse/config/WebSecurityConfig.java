@@ -60,6 +60,10 @@ public class WebSecurityConfig {
                                                 HttpMethod.POST,
                                                 "/api/outbound")
                                 .authenticated()
+                                .requestMatchers(
+                                                HttpMethod.DELETE,
+                                                "/api/outbound/*")
+                                .authenticated()
                                 // others
                                 .anyRequest().denyAll());
                 http.exceptionHandling(ex -> ex

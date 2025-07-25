@@ -168,4 +168,21 @@ public class OutboundServiceImpl implements OutboundService {
                 .build());
         return CreateOutboundResponse.builder().id(newOutbound.getId()).build();
     }
+
+    @Override
+    public void deleteOutboundById(long id) {
+        Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(id);
+        if (outboundResult.isEmpty()) {
+            throw new NotFoundException("outbound not found");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        OutboundEntity outbound = outboundResult.get();
+        if (outbound.getActualShippingDate() != null) {
+            throw new BadRequestException("can not delete outbound");
+        }
+        if (outbound.getActualShippingDate() == null && outbound.getExpectedShippingDate().isBefore(now)) {
+            throw new BadRequestException("can not delete outbound");
+        }
+        this.outboundRepository.delete(outbound);
+    }
 }
