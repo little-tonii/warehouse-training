@@ -194,7 +194,7 @@ public class InboundServiceImpl implements InboundService {
                     FileUploadResult result = new FileUploadResult();
                     result.setFileName(originFileName);
 
-                    String fileKey = UUID.randomUUID().toString() + "_" + originFileName;
+                    String fileKey = UUID.randomUUID().toString();
                     String filePath = savedId + "/" + fileKey;
                     try {
                         fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, filePath, file);

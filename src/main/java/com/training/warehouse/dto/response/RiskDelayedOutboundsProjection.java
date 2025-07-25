@@ -5,4 +5,5 @@ import java.time.LocalDateTime;
 public interface RiskDelayedOutboundsProjection {
     LocalDateTime getExpectedShippingDate();
     String getUserEmail();
+    Long getInboundID();
 }

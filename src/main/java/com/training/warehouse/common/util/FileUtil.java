@@ -97,7 +97,7 @@ public class FileUtil {
         XDDFNumericalDataSource<Double> airconData = XDDFDataSourcesFactory.fromNumericCellRange(sheet, new CellRangeAddress(firstRow, endRow, 2, 2));
         XDDFNumericalDataSource<Double> sparePartData = XDDFDataSourcesFactory.fromNumericCellRange(sheet, new CellRangeAddress(firstRow, endRow, 3, 3));
 
-        XDDFChartData data = chart.createData(ChartTypes.BAR, xAxis, yAxis);
+        XDDFChartData data = chart.createData(ChartTypes.BAR3D, xAxis, yAxis);
 
         XDDFChartData.Series airconSeries = data.addSeries(countries, airconData);
         XDDFChartData.Series sparePartSeries = data.addSeries(countries, sparePartData);

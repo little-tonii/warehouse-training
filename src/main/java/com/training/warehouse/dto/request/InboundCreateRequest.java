@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -52,7 +53,7 @@ public class InboundCreateRequest {
 
     // Nếu cần
     public void validate() {
-        if (attachments == null) return;
+        if (attachments == null) attachments = Collections.emptyList();;
         if (attachments.size() > 5) {
             throw new BadRequestException(ExceptionMessage.QUANTITY_FILE_IS_INVALID);
         }

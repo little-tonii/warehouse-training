@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.training.warehouse.dto.response.RiskDelayedOutboundsProjection;
 import com.training.warehouse.entity.UserEntity;
@@ -34,7 +35,7 @@ public class OutboundServiceImpl implements OutboundService {
     private final OutboundRepository outboundRepository;
     private final MailService mailService;
     private final UserRepository userRepository;
-//    private final InboundRepository inboundRepository;
+    private final InboundRepository inboundRepository;
 //    private final InboundAttachmentRepository inboundAttachmentRepository;
 //    private final FileStoreService fileStoreService;
 //    private final PdfService pdfService;
@@ -48,12 +49,23 @@ public class OutboundServiceImpl implements OutboundService {
     @Transactional
     public void alertDelayedOutbounds() {
         List<RiskDelayedOutboundsProjection> delayedOutbounds = outboundRepository.findAllRiskDelayedOutbounds();
-        for (RiskDelayedOutboundsProjection delayOutbound : delayedOutbounds) {
+        Map<String, List<RiskDelayedOutboundsProjection>> groupedByUser = delayedOutbounds.stream()
+                .collect(Collectors.groupingBy(RiskDelayedOutboundsProjection::getUserEmail));
 
-            LocalDateTime expectedDate = delayOutbound.getExpectedShippingDate();
-            String userEmail = delayOutbound.getUserEmail();
+        for (Map.Entry<String, List<RiskDelayedOutboundsProjection>> entry : groupedByUser.entrySet()) {
+            String userEmail = entry.getKey();
+            List<RiskDelayedOutboundsProjection> userOutbounds = entry.getValue();
 
-            String content = "Outbound is expected at " + expectedDate.toString();
+            StringBuilder contentBuilder = new StringBuilder();
+            contentBuilder.append("Bạn có các đơn outbound có nguy cơ trễ:\n\n");
+
+            for (RiskDelayedOutboundsProjection outbound : userOutbounds) {
+                String invoice = inboundRepository.findById(outbound.getInboundID()).orElseThrow().getInvoice();
+                contentBuilder.append("Dự kiến xuất: ").append(outbound.getExpectedShippingDate())
+                        .append(" từ inbound có invoice: ").append(invoice).append("\n");
+            }
+
+            String content = contentBuilder.toString();
             mailService.sendMail(userEmail, "Risk Delayed Outbound", content);
             System.out.println("Gửi mail tới user: " + userEmail);
         }
