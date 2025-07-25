@@ -18,6 +18,6 @@ public enum Role {
         for (Role r : Role.values()) {
             if (r.value == value) return r;
         }
-        throw new IllegalArgumentException("Unknown Role value: " + value);
+        throw new RuntimeException("Unknown Role value: " + value);
     }
 }
