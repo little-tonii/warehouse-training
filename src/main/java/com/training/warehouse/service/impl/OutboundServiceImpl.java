@@ -1,6 +1,5 @@
 package com.training.warehouse.service.impl;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,6 +24,7 @@ import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.entity.OutboundAttachmentEntity;
 import com.training.warehouse.entity.OutboundEntity;
 import com.training.warehouse.entity.UserEntity;
+import com.training.warehouse.enumeric.ShippingMethod;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.NotFoundException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
@@ -120,7 +120,10 @@ public class OutboundServiceImpl implements OutboundService {
                 dataRow.put("id", outbound.getId());
                 dataRow.put("quantity", outbound.getQuantity());
                 dataRow.put("expected", "%d/%d/%d".formatted(expectedDay, expectedMonth, expectedYear));
-                dataRow.put("actual", outbound.getActualShippingDate() != null ? "%d/%d/%d".formatted(actualDay, actualMonth, actualYear) : "");
+                dataRow.put("actual",
+                        outbound.getActualShippingDate() != null
+                                ? "%d/%d/%d".formatted(actualDay, actualMonth, actualYear)
+                                : "");
                 data.add(dataRow);
             }
             if (outbounds.isEmpty()) {
@@ -151,10 +154,18 @@ public class OutboundServiceImpl implements OutboundService {
         if (inboundResult.isEmpty()) {
             throw new BadRequestException("Inbound is not valid");
         }
-        InboundEntity inbound = inboundResult.get();
-        if (inbound.getQuantity() < request.getQuantity()) {
+        List<OutboundEntity> existsOutbounds = this.outboundRepository.findByInboundId(request.getInboundId());
+        long totalOutboundQuantity = existsOutbounds.stream().mapToLong((e) -> e.getQuantity()).sum();
+        if (request.getQuantity() > inboundResult.get().getQuantity() - totalOutboundQuantity) {
             throw new BadRequestException("Not enough quantity");
         }
-        return null;
+        OutboundEntity newOutbound = this.outboundRepository.save(OutboundEntity.builder()
+                .inboundId(request.getInboundId())
+                .quantity(request.getQuantity())
+                .shippingMethod(ShippingMethod.fromCode(request.getShippingMethod()))
+                .expectedShippingDate(request.getExceptedShippingDate())
+                .user(user)
+                .build());
+        return CreateOutboundResponse.builder().id(newOutbound.getId()).build();
     }
 }

@@ -1,5 +1,6 @@
 package com.training.warehouse.controller;
 
+import com.training.warehouse.dto.request.AuthLoginRequest;
 import com.training.warehouse.dto.request.CreateOutboundRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
 import com.training.warehouse.entity.UserEntity;
@@ -219,26 +220,23 @@ public class OutboundController {
                 name = "bearerAuth"
             ),
         },
-        parameters = {
-            @io.swagger.v3.oas.annotations.Parameter(
-                name = "start_month",
-                required = true,
-                in = ParameterIn.QUERY,
-                schema = @Schema(type = "string", format = "date-time")
-            ),
-            @io.swagger.v3.oas.annotations.Parameter(
-                name = "end_month",
-                required = true,
-                in = ParameterIn.QUERY,
-                schema = @Schema(type = "string", format = "date-time")
-            ),
-        },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "request", 
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = CreateOutboundRequest.class)
+            )
+        ),
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "success",
+                responseCode = "201",
+                description = "created",
                 content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/octet-stream"
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = CreateOutboundResponse.class
+                    )
                 )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
