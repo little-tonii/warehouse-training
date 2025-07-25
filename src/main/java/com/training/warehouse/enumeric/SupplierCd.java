@@ -27,6 +27,6 @@ public enum SupplierCd {
                 return supplier;
             }
         }
-        throw new IllegalArgumentException("Invalid supplier code: " + code);
+        throw new RuntimeException("Invalid supplier code: " + code);
     }
 }
