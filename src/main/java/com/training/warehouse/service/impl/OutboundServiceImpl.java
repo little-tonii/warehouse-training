@@ -1,5 +1,6 @@
 package com.training.warehouse.service.impl;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -17,10 +18,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.training.warehouse.dto.request.CreateOutboundRequest;
+import com.training.warehouse.dto.response.CreateOutboundResponse;
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.entity.OutboundAttachmentEntity;
 import com.training.warehouse.entity.OutboundEntity;
+import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.NotFoundException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
@@ -50,7 +54,7 @@ public class OutboundServiceImpl implements OutboundService {
     @Transactional(rollbackFor = Exception.class)
     public byte[] confirmOutboundById(long outboundId) {
         Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
-        if (!outboundResult.isPresent()) {
+        if (outboundResult.isEmpty()) {
             throw new NotFoundException(ExceptionMessage.OUTBOUND_NOT_FOUND);
         }
         OutboundEntity outbound = outboundResult.get();
@@ -58,7 +62,7 @@ public class OutboundServiceImpl implements OutboundService {
             throw new BadRequestException(ExceptionMessage.OUTBOUND_CONFIRMED);
         }
         Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
-        if (!inboundResult.isPresent()) {
+        if (inboundResult.isEmpty()) {
             throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
         }
         List<InboundAttachmentEntity> inboundAttachments = this.inboundAttachmentRepository
@@ -73,13 +77,14 @@ public class OutboundServiceImpl implements OutboundService {
         });
         byte[] mergedFile = this.pdfService.mergeWithBookmarks(files);
         String filePath = UUID.randomUUID().toString();
-        String fileName = String.format("outbound-%s-confirmed", outbound.getId());
+        String fileName = String.format("outbound-%s-confirmed.pdf", outbound.getId());
         this.outboundAttachmentRepository
                 .save(OutboundAttachmentEntity.builder()
                         .filePath(filePath)
                         .fileName(fileName)
                         .build());
         outbound.setConfirmed(true);
+        outbound.setActualShippingDate(LocalDateTime.now());
         this.outboundRepository.save(outbound);
         this.fileStoreService.uploadFile(FileStoreService.OUTBOUND_BUCKET, filePath, fileName, mergedFile);
         return mergedFile;
@@ -101,12 +106,21 @@ public class OutboundServiceImpl implements OutboundService {
             List<OutboundEntity> outbounds = groupedByMonth.getOrDefault(current, Collections.emptyList());
             pieData.put(current.toString(), outbounds.size());
             for (OutboundEntity outbound : outbounds) {
+                int expectedDay = outbound.getExpectedShippingDate().getDayOfMonth();
+                int expectedMonth = outbound.getExpectedShippingDate().getMonthValue();
+                int expectedYear = outbound.getExpectedShippingDate().getYear();
+                int actualDay = -1, actualMonth = -1, actualYear = -1;
+                if (outbound.getActualShippingDate() != null) {
+                    actualDay = outbound.getActualShippingDate().getDayOfMonth();
+                    actualMonth = outbound.getActualShippingDate().getMonthValue();
+                    actualYear = outbound.getActualShippingDate().getYear();
+                }
                 Map<String, Object> dataRow = new HashMap<>();
                 dataRow.put("month", current.toString());
                 dataRow.put("id", outbound.getId());
                 dataRow.put("quantity", outbound.getQuantity());
-                dataRow.put("expected", outbound.getExpectedShippingDate());
-                dataRow.put("actual", outbound.getActualShippingDate());
+                dataRow.put("expected", "%d/%d/%d".formatted(expectedDay, expectedMonth, expectedYear));
+                dataRow.put("actual", outbound.getActualShippingDate() != null ? "%d/%d/%d".formatted(actualDay, actualMonth, actualYear) : "");
                 data.add(dataRow);
             }
             if (outbounds.isEmpty()) {
@@ -129,5 +143,18 @@ public class OutboundServiceImpl implements OutboundService {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    @Override
+    public CreateOutboundResponse createOutbound(UserEntity user, CreateOutboundRequest request) {
+        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(request.getInboundId());
+        if (inboundResult.isEmpty()) {
+            throw new BadRequestException("Inbound is not valid");
+        }
+        InboundEntity inbound = inboundResult.get();
+        if (inbound.getQuantity() < request.getQuantity()) {
+            throw new BadRequestException("Not enough quantity");
+        }
+        return null;
     }
 }

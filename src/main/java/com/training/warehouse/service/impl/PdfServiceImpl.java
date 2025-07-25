@@ -2,6 +2,8 @@ package com.training.warehouse.service.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.awt.image.BufferedImage;
 
@@ -45,51 +47,43 @@ public class PdfServiceImpl implements PdfService {
     @Override
     public byte[] mergeWithBookmarks(Map<String, byte[]> inputFiles) {
         try {
-            // Create a new PDF document to hold all merged content
             PDDocument mergedDocument = new PDDocument();
-            // Initialize the root outline (bookmark) tree
-            PDDocumentOutline bookmarkOutline = new PDDocumentOutline();
-            mergedDocument.getDocumentCatalog().setDocumentOutline(bookmarkOutline);
-            // Iterate through each input file (filename → byte[])
-            for (Map.Entry<String, byte[]> fileEntry : inputFiles.entrySet()) {
-                String fileName = fileEntry.getKey(); // File name (used as bookmark title)
-                byte[] fileContent = fileEntry.getValue(); // File content
-                PDDocument singleDocument;
-                // If it's a PDF file, load it directly using PDFBox Loader
-                if (fileName.toLowerCase().endsWith(".pdf")) {
-                    singleDocument = Loader.loadPDF(fileContent);
-                } else {
-                    // Otherwise, assume it's an image (e.g., JPG, PNG) and convert it to a one-page
-                    // PDF
-                    singleDocument = convertImageToPdf(fileContent);
-                }
-                // Record the starting page index before appending pages
-                int startPageIndex = mergedDocument.getNumberOfPages();
-                // Append each page from the single document to the merged document
-                for (PDPage page : singleDocument.getPages()) {
-                    mergedDocument.addPage(page);
-                }
-                // Create a bookmark pointing to the starting page of the newly added content
-                PDPageDestination destination = new PDPageFitDestination();
-                destination.setPage(mergedDocument.getPage(startPageIndex));
-                PDOutlineItem bookmarkItem = new PDOutlineItem();
-                bookmarkItem.setTitle(fileName); // Set the title of the bookmark
-                bookmarkItem.setDestination(destination); // Set where the bookmark points
-                bookmarkOutline.addLast(bookmarkItem); // Add bookmark to the root outline
-                singleDocument.close(); // Close the temporary document after processing
-            }
-            // Expand the bookmarks panel by default when opening the PDF
-            bookmarkOutline.openNode();
-            // Save the merged document to memory (byte array)
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            PDDocumentOutline bookmarkOutline = new PDDocumentOutline();
+            List<PDDocument> documentsToClose = new ArrayList<>();
+            mergedDocument.getDocumentCatalog().setDocumentOutline(bookmarkOutline);
+            for (Map.Entry<String, byte[]> fileEntry : inputFiles.entrySet()) {
+                String fileName = fileEntry.getKey();
+                byte[] fileContent = fileEntry.getValue();
+                PDDocument sourceDocument;
+                if (fileName.toLowerCase().endsWith(".pdf")) {
+                    sourceDocument = Loader.loadPDF(fileContent);
+                } else {
+                    sourceDocument = convertImageToPdf(fileContent);
+                }
+                documentsToClose.add(sourceDocument);
+                int startPageIndex = mergedDocument.getNumberOfPages();
+                for (PDPage page : sourceDocument.getPages()) {
+                    mergedDocument.importPage(page);
+                }
+                if (mergedDocument.getNumberOfPages() > startPageIndex) {
+                    PDPageDestination destination = new PDPageFitDestination();
+                    destination.setPage(mergedDocument.getPage(startPageIndex));
+                    PDOutlineItem bookmarkItem = new PDOutlineItem();
+                    bookmarkItem.setTitle(fileName);
+                    bookmarkItem.setDestination(destination);
+                    bookmarkOutline.addLast(bookmarkItem);
+                }
+            }
+            bookmarkOutline.openNode();
             mergedDocument.save(outputStream);
-            // Close the merged PDF document
+            for (PDDocument document : documentsToClose) {
+                document.close();
+            }
             mergedDocument.close();
-            // Return the generated PDF as byte array
             return outputStream.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
     }
-
 }
