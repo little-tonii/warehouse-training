@@ -13,4 +13,6 @@ public interface OutboundService {
 
     CreateOutboundResponse createOutbound(UserEntity user, CreateOutboundRequest request);
 
+    void deleteOutboundById(long id);
+
 }
