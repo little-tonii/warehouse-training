@@ -128,8 +128,8 @@ public class OutboundController {
                                     schema = @Schema(type = "string", format = "binary")
                             ))
             })
-    @GetMapping(value = "/stock-summary-by-month")
-    public ResponseEntity<?> getStockSummaryByMonth(@RequestParam(name = "month", defaultValue = "1") @Min(1) @Max(12) int month,
+    @GetMapping(value = "/stock-summary-by-month",produces = "application/xlsx")
+    public ResponseEntity<byte[]> getStockSummaryByMonth(@RequestParam(name = "month", defaultValue = "1") @Min(1) @Max(12) int month,
                                                       @RequestParam(name = "year") Integer year) {
         if(year == null) year = Year.now().getValue();
 
@@ -140,12 +140,12 @@ public class OutboundController {
 
             int col1 = 4, col2 = 10;
 
-            FileUtil.drawStockSummaryBarChart(workbook,col1,0,col2,10,month);
+            FileUtil.drawStockSummaryBarChart(workbook,col1,1,col2,10,month);
 
             workbook.write(out);
             byte[] fileContent = out.toByteArray();
 
-            String fileName = URLEncoder.encode("InboundSummary-RPT1.xlsx", StandardCharsets.UTF_8);
+            String fileName = URLEncoder.encode("StockSummary-RPT1.xlsx", StandardCharsets.UTF_8);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(
@@ -171,7 +171,7 @@ public class OutboundController {
                     @ApiResponse(responseCode = "400", description = "Lỗi đọc file hoặc lỗi hệ thống")
             }
     )
-    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/import-export-plan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> importOutbound(@RequestParam("file") MultipartFile file) {
         try {
             Map<String, Object> result = outboundService.importCsvExportPlan(file);
