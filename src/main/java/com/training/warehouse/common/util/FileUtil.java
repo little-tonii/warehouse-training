@@ -1,6 +1,7 @@
 package com.training.warehouse.common.util;
 
 import com.training.warehouse.dto.response.InboundSummaryPerMonth;
+import com.training.warehouse.dto.response.StockProjection;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.handler.ExceptionMessage;
@@ -36,6 +37,73 @@ public class FileUtil {
         }
     }
 
+    public static XSSFWorkbook createStockSummary(StockProjection data){
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet summarySheet = workbook.createSheet("Summary");
+        FileUtil.clearSheet(summarySheet);
+        int rowIdx = 0;
+
+        Row header = summarySheet.createRow(rowIdx++);
+        header.createCell(0).setCellValue("Start Quantity");
+        header.createCell(1).setCellValue("End Quantity");
+//        header.createCell(2).setCellValue("Diff Quantity");
+
+        Row rowData =summarySheet.createRow(rowIdx++);
+        rowData.createCell(0).setCellValue(
+                data.startQuantity() != null ? data.startQuantity().doubleValue() : 0.0
+        );
+        rowData.createCell(1).setCellValue(
+                data.endQuantity() != null ? data.endQuantity().doubleValue() : 0.0
+        );
+//        rowData.createCell(2).setCellValue(data.diffQuantity());
+
+        return workbook;
+    }
+
+    public static void drawStockSummaryBarChart(XSSFWorkbook workbook,int col1, int row1,int col2,int row2, int month){
+        XSSFSheet sheet = (XSSFSheet) workbook.getSheet("Summary");
+        XSSFDrawing drawing = sheet.createDrawingPatriarch();
+        XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, col1, row1, col2, row2);
+
+        XSSFChart chart = drawing.createChart(anchor);
+        chart.getOrAddLegend().setPosition(LegendPosition.RIGHT);
+        chart.setTitleText("Stock Quantity Chart month "+ month);
+        chart.setTitleOverlay(false);
+
+        XDDFCategoryAxis xAxis = chart.createCategoryAxis(AxisPosition.LEFT);
+        xAxis.setTitle("Time");
+        chart.setTitleOverlay(false);
+
+        XDDFValueAxis yAxis = chart.createValueAxis(AxisPosition.BOTTOM);
+        yAxis.setTitle("Quantity");
+
+        List<String> extendedXAxis = new ArrayList<>();
+        List<Double> extendedYAxis = new ArrayList<>();
+        extendedXAxis.add("");
+        extendedXAxis.add("start");
+        extendedXAxis.add("end");
+        extendedYAxis.add(0.0);
+        extendedYAxis.add(sheet.getRow(1).getCell(0).getNumericCellValue());
+        extendedYAxis.add(sheet.getRow(1).getCell(1).getNumericCellValue());
+        extendedXAxis.add("");
+        extendedYAxis.add(0.0);
+
+        XDDFDataSource<String> dataX = XDDFDataSourcesFactory.fromArray(extendedXAxis.toArray(new String[0]));
+        XDDFNumericalDataSource<Double> dataY = XDDFDataSourcesFactory.fromArray(extendedYAxis.toArray(new Double[0]));
+
+        XDDFChartData data = chart.createData(ChartTypes.BAR, xAxis, yAxis);
+        // cột đứng
+        XDDFBarChartData bar = (XDDFBarChartData) data;
+        bar.setBarDirection(BarDirection.COL);
+
+        XDDFChartData.Series series = data.addSeries(dataX,dataY);
+
+        XDDFShapeProperties dataProps = new XDDFShapeProperties();
+        dataProps.setFillProperties(new XDDFSolidFillProperties(XDDFColor.from(PresetColor.BLUE)));
+        series.setShapeProperties(dataProps);;
+
+        chart.plot(data);
+    }
     public static XSSFWorkbook createSummaryWorkbook(Map<Integer, List<InboundSummaryPerMonth>> groupedData) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet summarySheet = workbook.createSheet("Summary");

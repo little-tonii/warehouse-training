@@ -1,7 +1,18 @@
 package com.training.warehouse.controller;
 
+import com.training.warehouse.common.util.FileUtil;
+import com.training.warehouse.dto.response.StockProjection;
 import com.training.warehouse.exception.BadRequestException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.constraints.Max;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -9,9 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.service.OutboundService;
@@ -20,10 +29,15 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Year;
 import java.util.Date;
+import java.util.Map;
+import java.util.Objects;
 
 @Controller
 @RequestMapping("/api/outbound")
@@ -102,13 +116,72 @@ public class OutboundController {
                 .body(mergedPdf);
     }
 
-//    @GetMapping(value = "/outbound-summary-by-month")
-//    public ResponseEntity<?> getOutboundSummaryByMonth(@RequestParam(name = "startMonth", defaultValue = "1") @Min(1) @Max(12) int month,
-//                                                      @RequestParam(name = "year") Integer year) {
-//        if(year == null) year = Year.now().getValue();
-//
-//        List<> data = outboundService.getOutboundSummaryByMonth(month,year);
-//
-//        return null;
-//    }
+    @Operation(
+            parameters = {
+                    @Parameter(name = "month", example = "3" ,schema = @Schema(type = "integer")),
+                    @Parameter(name = "year", example = "2025",schema = @Schema(type = "integer"))
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            content = @Content(
+                                    mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                    schema = @Schema(type = "string", format = "binary")
+                            ))
+            })
+    @GetMapping(value = "/stock-summary-by-month")
+    public ResponseEntity<?> getStockSummaryByMonth(@RequestParam(name = "month", defaultValue = "1") @Min(1) @Max(12) int month,
+                                                      @RequestParam(name = "year") Integer year) {
+        if(year == null) year = Year.now().getValue();
+
+        StockProjection data = outboundService.getStockSummaryByMonth(month,year);
+
+        try (XSSFWorkbook workbook = FileUtil.createStockSummary(data);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            int col1 = 4, col2 = 10;
+
+            FileUtil.drawStockSummaryBarChart(workbook,col1,0,col2,10,month);
+
+            workbook.write(out);
+            byte[] fileContent = out.toByteArray();
+
+            String fileName = URLEncoder.encode("InboundSummary-RPT1.xlsx", StandardCharsets.UTF_8);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(
+                    MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDisposition(ContentDisposition.attachment().filename(fileName).build());
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(fileContent.length)
+                    .body(fileContent);
+        } catch (Exception e) {
+            throw new RuntimeException("lỗi: "+e);
+        }
+    }
+
+    @Operation(
+            summary = "Import kế hoạch xuất kho từ file CSV",
+            description = " Nhập danh sách kế hoạch xuất kho từ file CSV.",
+
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Import thành công hoặc có lỗi từng dòng",
+                            content = @Content(mediaType = "application/json")),
+                    @ApiResponse(responseCode = "400", description = "Lỗi đọc file hoặc lỗi hệ thống")
+            }
+    )
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> importOutbound(@RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, Object> result = outboundService.importCsvExportPlan(file);
+            if (result.containsKey("errorMessages")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
+            }
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
 }
