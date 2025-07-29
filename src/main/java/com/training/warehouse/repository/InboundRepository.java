@@ -5,7 +5,9 @@ import org.springframework.stereotype.Repository;
 
 import com.training.warehouse.entity.InboundEntity;
 
+import java.util.Optional;
+
 @Repository
 public interface InboundRepository extends JpaRepository<InboundEntity, Long>{
-    
+    Optional<InboundEntity> findByInvoice(String invoice);
 }
