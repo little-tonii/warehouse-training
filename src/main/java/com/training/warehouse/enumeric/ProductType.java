@@ -22,6 +22,6 @@ public enum ProductType {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Invalid product type: " + name);
+        throw new RuntimeException("Invalid product type: " + name);
     }
 }

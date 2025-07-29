@@ -1,14 +1,25 @@
 package com.training.warehouse.controller;
 
+import com.training.warehouse.common.util.FileUtil;
+import com.training.warehouse.common.util.InboundUtil;
 import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.InboundResponse;
+import com.training.warehouse.dto.response.InboundSummaryMonthProjection;
+import com.training.warehouse.dto.response.InboundSummaryPerMonth;
 import com.training.warehouse.dto.response.InboundSummaryResponse;
-import com.training.warehouse.entity.UserEntity;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.validation.annotation.Validated;
+import com.training.warehouse.exception.BadRequestException;
+import com.training.warehouse.service.MailService;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import jakarta.validation.constraints.Max;
+import lombok.Value;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +33,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -30,14 +40,19 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Year;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
 import jakarta.validation.constraints.Min;
-import lombok.AllArgsConstructor;
 
 
 @RestController
@@ -47,59 +62,59 @@ import lombok.AllArgsConstructor;
 public class InboundController {
     private final InboundService inboundService;
     private final InboundStatisticService inboundStatisticService;
-
-    @io.swagger.v3.oas.annotations.Operation(
-        method = "DELETE",
-        summary = "delete inbound by id",
-        security = {
-            @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"),
-        },
-        parameters = {
-            @io.swagger.v3.oas.annotations.Parameter(
-                name = "id",
-                in = ParameterIn.PATH,
-                required = true,
-                schema = @Schema(type = "integer", format = "int64", minimum = "1")
-            )
-        },
-        responses = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "204",
-                description = "inbound deleted successfully"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "400",
-                description = "invalid request data",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/json",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
-                )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "401",
-                description = "unauthorized",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/json",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
-                )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "inbound not found",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/json",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
-                )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "500",
-                description = "internal server error",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    mediaType = "application/json",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
-                )
-            )
-        }
+    private final MailService mailService;
+    @Operation(
+            method = "DELETE",
+            summary = "delete inbound by id",
+            security = {
+                    @SecurityRequirement(name = "bearerAuth"),
+            },
+            parameters = {
+                    @Parameter(
+                            name = "id",
+                            in = ParameterIn.PATH,
+                            required = true,
+                            schema = @Schema(type = "integer", format = "int64", minimum = "1")
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "inbound deleted successfully"
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "invalid request data",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "unauthorized",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "inbound not found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "internal server error",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    )
+            }
     )
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteById(@PathVariable @Min(value = 1, message = "inboundId must be greater than 0") long id) {
@@ -107,10 +122,10 @@ public class InboundController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @io.swagger.v3.oas.annotations.Operation(
+    @Operation(
             method = "POST",
             summary = "create inbound",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            requestBody = @RequestBody(
                     required = true,
                     content = @Content(
                             mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
@@ -177,7 +192,7 @@ public class InboundController {
             }
     )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createInbound( @ModelAttribute @Valid InboundCreateRequest request) {
+    public ResponseEntity<?> createInbound(@ModelAttribute @Valid InboundCreateRequest request) {
         return ResponseEntity.ok(inboundService.createInbound(request));
     }
 
@@ -187,17 +202,19 @@ public class InboundController {
             parameters = {
                     @Parameter(
                             name = "id",
-                            required = true,
                             in = ParameterIn.PATH,
+                            required = true,
                             example = "123"
                     )
             },
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            requestBody = @RequestBody(
                     required = true,
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = InboundCreateRequest.class)
-                    )
+                    content = {
+                            @Content(
+                                    mediaType = "multipart/form-data",
+                                    schema = @Schema(implementation = InboundUpdateRequest.class)
+                            )
+                    }
             ),
             responses = {
                     @ApiResponse(
@@ -250,12 +267,12 @@ public class InboundController {
                     )
             }
     )
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateInbound(@PathVariable Long id, @Valid @RequestBody InboundUpdateRequest request) {
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateInbound(@PathVariable Long id,
+                                           @ModelAttribute @Valid InboundUpdateRequest request) {
+
         return ResponseEntity.ok(inboundService.updateInbound(id, request));
     }
-
-
 
 
     @Operation(
@@ -320,14 +337,120 @@ public class InboundController {
     }
 
     @Operation(
+            parameters = {
+                    @Parameter(name = "startMonth", example = "3" ,schema = @Schema(type = "integer")),
+                    @Parameter(name = "endMonth", example = "5",schema = @Schema(type = "integer")),
+                    @Parameter(name = "year", example = "2025",schema = @Schema(type = "integer"))
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            content = @Content(
+                                    mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                    schema = @Schema(type = "string", format = "binary")
+                            ))
+            })
+    @GetMapping(value = "/inbound-summary-by-month",
+            produces = "application/xlsx")
+    public ResponseEntity<byte[]> getInboundSummaryByMonth(
+            @RequestParam(name = "startMonth", defaultValue = "1") @Min(1) @Max(12) int startMonth,
+            @RequestParam(name = "endMonth", defaultValue = "12") @Min(1) @Max(12) int endMonth,
+            @RequestParam(name = "year") Integer year) {
+
+        System.out.println("startMonth = " + startMonth);
+        System.out.println("endMonth = " + endMonth);
+        System.out.println("year = " + year);
+        if (startMonth > endMonth) {
+            throw new BadRequestException("Start month cannot be greater than end month");
+        }
+        if (year == null) {
+            year = Year.now().getValue();
+        }
+        List<InboundSummaryMonthProjection> statisticData = inboundStatisticService.getInboundSummaryByMonth(startMonth, endMonth, year);
+
+        System.out.println(statisticData);
+        Map<Integer, List<InboundSummaryPerMonth>> groupdDataByMonth = InboundUtil.extractAndGroupDataByMonth(statisticData);
+        try (XSSFWorkbook workbook = FileUtil.createSummaryWorkbook(groupdDataByMonth);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            XSSFSheet sheet = workbook.getSheet("summary");
+
+            int col1 = 4, col2 = 14;
+            int idx = 1;
+            int firstRow = -1;
+            int lastRow = sheet.getLastRowNum();
+            Integer currentMonth = null;
+            int chartBaseRow = 1;
+
+            while (idx <= lastRow) {
+                Row row = sheet.getRow(idx);
+                if (row == null) {
+                    idx++;
+                    continue;
+                }
+
+                Cell cell = row.getCell(0);
+                if (cell != null && cell.getCellType() == CellType.NUMERIC) {
+                    int month = (int) cell.getNumericCellValue();
+
+                    if (currentMonth != null && !Objects.equals(currentMonth, month)) {
+                        int endRow = idx - 1;
+                        int chartStartRow = chartBaseRow;
+                        int chartEndRow = chartStartRow + 12;
+
+                        FileUtil.drawBarChart(
+                                workbook,
+                                firstRow, endRow,
+                                col1, chartStartRow,
+                                col2, chartEndRow,
+                                currentMonth
+                        );
+
+                        chartBaseRow = chartEndRow + 2;
+                        firstRow = idx;
+                    } else if (currentMonth == null) {
+                        firstRow = idx;
+                    }
+                    currentMonth = month;
+                }
+                idx++;
+            }
+
+            if (currentMonth != null && firstRow <= lastRow) {
+                int endRow = lastRow;
+                int chartStartRow = chartBaseRow;
+                int chartEndRow = chartStartRow + 9;
+
+                FileUtil.drawBarChart(
+                        workbook,
+                        firstRow, endRow,
+                        col1, chartStartRow,
+                        col2, chartEndRow,
+                        currentMonth
+                );
+            }
+
+            workbook.write(out);
+            byte[] fileContent = out.toByteArray();
+
+            String fileName = URLEncoder.encode("InboundSummary-RPT2.xlsx", StandardCharsets.UTF_8);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(
+                    MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDisposition(ContentDisposition.attachment().filename(fileName).build());
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(fileContent.length)
+                    .body(fileContent);
+        } catch (Exception e) {
+            throw new RuntimeException("lỗi: "+e);
+        }
+    }
+
+    @Operation(
             summary = "Import Inbound Data from CSV file",
             method = "POST",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    content = @Content(
-                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(type = "string", format = "binary")
-                    )
-            ),
+
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -342,8 +465,32 @@ public class InboundController {
             }
     )
     @PostMapping(value = "/import-inbound-data", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> importInboundDataFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> importInboundDataFile(@Parameter(description = "CSV file", content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE))
+                                                   @RequestParam("file") MultipartFile file) {
         Map<String, Object> result = inboundService.importFromCsv(file);
         return ResponseEntity.ok(result);
+    }
+
+    @Operation(
+            summary = "send alert",
+            method= "GET",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "object")
+                            )
+                    )
+            }
+    )
+    @GetMapping("/send")
+    public ResponseEntity<?> sendMail(
+            @RequestParam String to,
+            @RequestParam String subject,
+            @RequestParam String content
+    ) {
+        mailService.sendMail(to, subject, content);
+        return ResponseEntity.ok("Đã gửi mail test tới " + to);
     }
 }

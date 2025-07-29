@@ -2,7 +2,6 @@ package com.training.warehouse.service.impl;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
-import com.training.warehouse.common.util.FileUtil;
 import com.training.warehouse.common.util.SecurityUtil;
 import com.training.warehouse.dto.request.InboundCreateRequest;
 import com.training.warehouse.dto.request.InboundImportFileRequest;
@@ -15,6 +14,7 @@ import java.util.Optional;
 
 import com.training.warehouse.entity.UserEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
@@ -68,6 +68,7 @@ public class InboundServiceImpl implements InboundService {
     public Map<String, Object> importFromCsv(MultipartFile file) {
         List<InboundEntity> validEntities = new ArrayList<>();
         List<String> errors = new ArrayList<>();
+        UserEntity currUser = SecurityUtil.getCurrentUser();
         try (Reader reader = new InputStreamReader(file.getInputStream());
              CSVReader csvReader = new CSVReader(reader)) {
             List<String[]> allRows = csvReader.readAll();
@@ -117,6 +118,10 @@ public class InboundServiceImpl implements InboundService {
                         throw new IllegalArgumentException(message);
                     }
 
+                    if (inboundRepository.findByInvoice(dto.getInvoice()).isPresent()) {
+                        throw new BadRequestException("Invoice đã tồn tại");
+                    }
+
                     InboundEntity entity = InboundEntity.builder()
                             .invoice(dto.getInvoice())
                             .status(dto.getStatus())
@@ -124,6 +129,7 @@ public class InboundServiceImpl implements InboundService {
                             .quantity(dto.getQuantity())
                             .productType(ProductType.fromString(dto.getProductType()))
                             .receiveDate(dto.getReceiveDate())
+                            .user(currUser)
                             .build();
 
                     validEntities.add(entity);
@@ -133,7 +139,7 @@ public class InboundServiceImpl implements InboundService {
             }
 
             try {
-                if (!validEntities.isEmpty()) {
+                if (errors.isEmpty()) {
                     inboundRepository.saveAll(validEntities);
                 }
             } catch (DataIntegrityViolationException e) {
@@ -147,8 +153,9 @@ public class InboundServiceImpl implements InboundService {
             throw new RuntimeException("Failed to read CSV file", e);
         }
         Map<String, Object> result = new HashMap<>();
-        result.put("successCount", validEntities.size());
-        result.put("errorMessages", errors);
+        if(errors.isEmpty())
+            result.put("success", validEntities.size() + " hàng được import");
+        else result.put("errorMessages", errors);
 
         return result;
     }
@@ -181,50 +188,52 @@ public class InboundServiceImpl implements InboundService {
                 throw new RuntimeException("Lỗi khi lưu đơn nhập: " + e.getMessage(), e);
             }
 
-            for (MultipartFile file : attachments) {
-                if(file.isEmpty())  continue;
-                String originFileName = file.getOriginalFilename();
-                FileUploadResult result = new FileUploadResult();
-                result.setFileName(originFileName);
+            if (attachments != null && !attachments.isEmpty()) {
+                for (MultipartFile file : attachments) {
+                    if (file.isEmpty()) continue;
+                    String originFileName = file.getOriginalFilename();
+                    FileUploadResult result = new FileUploadResult();
+                    result.setFileName(originFileName);
 
-                String fileKey = UUID.randomUUID().toString() + "_" + originFileName;
-                String filePath = savedId+"/"+fileKey;
-                try {
-                    fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET,filePath, file);
-                    result.setUploaded(true);
-                } catch (Exception e) {
-                    result.setUploaded(false);
-                    result.setErrorMessage("Upload failed: " + e.getMessage());
-                    results.add(result);
-                    continue;
-                }
-
-                try {
-                    InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
-                            .fileName(originFileName)
-                            .inboundId(savedId)
-                            .filePath(filePath)
-                            .build();
-
-                    inboundAttachmentRepository.save(inboundAttachment);
-                    result.setSavedToDB(true);
-                } catch (Exception e) {
-                    result.setSavedToDB(false);
-                    result.setErrorMessage("Database save failed: " + e.getMessage());
+                    String fileKey = UUID.randomUUID().toString();
+                    String filePath = savedId + "/" + fileKey;
+                    try {
+                        fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, filePath, file);
+                        result.setUploaded(true);
+                    } catch (Exception e) {
+                        result.setUploaded(false);
+                        result.setErrorMessage("Upload failed: " + e.getMessage());
+                        results.add(result);
+                        continue;
+                    }
 
                     try {
-                        fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, originFileName);
-                    } catch (Exception ex) {
-                        result.setErrorMessage(result.getErrorMessage() + ". Failed to rollback upload: " + ex.getMessage());
-                    }
-                }
-                results.add(result);
-            }
+                        InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
+                                .fileName(originFileName)
+                                .inboundId(savedId)
+                                .filePath(filePath)
+                                .build();
 
+                        inboundAttachmentRepository.save(inboundAttachment);
+                        result.setSavedToDB(true);
+                    } catch (Exception e) {
+                        result.setSavedToDB(false);
+                        result.setErrorMessage("Database save failed: " + e.getMessage());
+
+                        try {
+                            fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, originFileName);
+                        } catch (Exception ex) {
+                            result.setErrorMessage(result.getErrorMessage() + ". Failed to rollback upload: " + ex.getMessage());
+                        }
+                    }
+                    results.add(result);
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException("Tạo đơn nhập thất bại: " + e.getMessage(), e);
         }
-        return mapToResponse(saved,results);
+
+        return mapToResponse(saved, results);
     }
 
     @Override
@@ -249,49 +258,47 @@ public class InboundServiceImpl implements InboundService {
         setIfNotNull(dto.getStatus(), entity::setStatus);
 
         List<FileUploadResult> results = new ArrayList<>();
-        try{
-            InboundEntity saved = inboundRepository.save(entity);
+        try {
+            inboundRepository.save(entity);
+
             List<InboundAttachmentEntity> inboundAttachments = entity.getAttachments();
-            int i = 0;
-            if (inboundAttachments == null) {
-                return mapToResponse(saved,null);
-            }
-            for(InboundAttachmentEntity inboundAttachment: inboundAttachments){
-                FileUploadResult result = new FileUploadResult();
-                if(dto.getAttachments().get(i) != null ){
-                    Long inbId = inboundAttachment.getInboundId();
-                    String filePath = inboundAttachment.getFilePath();
-                    String fileName = inboundAttachment.getFileName();
+            if (inboundAttachments != null && !inboundAttachments.isEmpty()) {
+                int i = 0;
+                for (InboundAttachmentEntity inboundAttachment : inboundAttachments) {
+                    FileUploadResult result = new FileUploadResult();
+                    if (dto.getAttachments().get(i) != null && !dto.getAttachments().get(i).isEmpty()) {
+                        Long inbId = inboundAttachment.getInboundId();
+                        String filePath = inboundAttachment.getFilePath();
+                        String fileName = inboundAttachment.getFileName();
 
-                    String newFileName = dto.getAttachments().get(i).getOriginalFilename();
-                    result.setFileName(newFileName);
-                    try{
-                        FileUtil.validateFileName(newFileName);
-
-                        try { // k tồn tại file
-                            fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, fileName);
-                        } catch (Exception e) {
-                            // k tồn tại file thì lỗi, bỏ qua lỗi
-                        }
-
-                        String fileKey = UUID.randomUUID().toString() + "_" + newFileName;
-                        String newFilePath = inbId+"/"+fileKey;
+                        String newFileName = dto.getAttachments().get(i).getOriginalFilename();
+                        result.setFileName(newFileName);
                         try {
-                            fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, newFilePath, dto.getAttachments().get(i));
-                            inboundAttachment.setFileName(newFileName);
-                            inboundAttachment.setFilePath(newFilePath);
-                            inboundAttachmentRepository.save(inboundAttachment);
+                            try { // k tồn tại file
+                                fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, fileName);
+                            } catch (Exception e) {
+                                // k tồn tại file thì lỗi, bỏ qua lỗi
+                            }
+
+                            String fileKey = UUID.randomUUID().toString() + "_" + newFileName;
+                            String newFilePath = inbId + "/" + fileKey;
+                            try {
+                                fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, newFilePath, dto.getAttachments().get(i));
+                                inboundAttachment.setFileName(newFileName);
+                                inboundAttachment.setFilePath(newFilePath);
+                                inboundAttachmentRepository.save(inboundAttachment);
+                            } catch (Exception e) {
+                                result.setUploaded(false);
+                            }
                         } catch (Exception e) {
                             result.setUploaded(false);
+                            result.setSavedToDB(false);
+                            result.setErrorMessage("Cannot save file " + newFileName);
                         }
-                    } catch (Exception e) {
-                        result.setUploaded(false);
-                        result.setSavedToDB(false);
-                        result.setErrorMessage("Cannot save file "+newFileName + e);
                     }
+                    i++;
+                    results.add(result);
                 }
-                i++;
-                results.add(result);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -301,8 +308,9 @@ public class InboundServiceImpl implements InboundService {
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteInboundById(long inboundId) {
-        Optional<InboundEntity> inboundResult = inboundRepository.findById(inboundId);
+        Optional<InboundEntity> inboundResult  = inboundRepository.findById(inboundId);
         if (!inboundResult.isPresent()) {
             throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
         }
@@ -317,10 +325,14 @@ public class InboundServiceImpl implements InboundService {
             inboundAttachmentRepository.deleteById(attachment.getId());
         });
         inboundRepository.deleteById(inboundId);
+        attachments.forEach(attachment -> {
+            fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, attachment.getFilePath(),
+                    attachment.getFileName());
+        });
         return;
     }
 
-    private InboundResponse mapToResponse(InboundEntity e,List<FileUploadResult> results) {
+    private InboundResponse mapToResponse(InboundEntity e, List<FileUploadResult> results) {
 
         return InboundResponse.builder()
                 .id(e.getId())
@@ -332,7 +344,6 @@ public class InboundServiceImpl implements InboundService {
                 .status(e.getStatus())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
-                .inboundAttachments(e.getAttachments())
                 .results(results)
                 .build();
     }
