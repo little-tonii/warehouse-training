@@ -12,7 +12,6 @@ import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 
-import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -30,6 +29,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 @Controller
 @RequestMapping("/api/outbound")
@@ -356,5 +363,29 @@ public class OutboundController {
     public ResponseEntity<?> delete(@PathVariable @Min(value = 1, message = "outboundId must be greater than 0") long id) {
         this.outboundService.deleteOutboundById(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @Operation(
+            summary = "Import kế hoạch xuất kho từ file CSV",
+            description = " Nhập danh sách kế hoạch xuất kho từ file CSV.",
+
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Import thành công hoặc có lỗi từng dòng",
+                            content = @Content(mediaType = "application/json")),
+                    @ApiResponse(responseCode = "400", description = "Lỗi đọc file hoặc lỗi hệ thống")
+            }
+    )
+    @PostMapping(value = "/import-export-plan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> importOutbound(@RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, Object> result = outboundService.importCsvExportPlan(file);
+            if (result.containsKey("errorMessages")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
+            }
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Lỗi hệ thống: " + e.getMessage()));
+        }
     }
 }
