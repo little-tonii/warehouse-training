@@ -15,4 +15,6 @@ public interface OutboundService {
 
     void deleteOutboundById(long id);
 
+    void alertDelayedOutbounds();
+
 }

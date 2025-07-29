@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.training.warehouse.service.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +33,13 @@ import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundAttachmentRepository;
 import com.training.warehouse.repository.OutboundRepository;
-import com.training.warehouse.service.ExcelService;
-import com.training.warehouse.service.FileStoreService;
-import com.training.warehouse.service.OutboundService;
-import com.training.warehouse.service.PdfService;
 
 import lombok.AllArgsConstructor;
+
+import java.util.*;
+
+import com.training.warehouse.dto.response.RiskDelayedOutboundsProjection;
+
 
 @Service
 @AllArgsConstructor
@@ -49,6 +51,7 @@ public class OutboundServiceImpl implements OutboundService {
     private final PdfService pdfService;
     private final OutboundAttachmentRepository outboundAttachmentRepository;
     private final ExcelService excelService;
+    private final MailService mailService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -184,5 +187,31 @@ public class OutboundServiceImpl implements OutboundService {
             throw new BadRequestException("can not delete outbound");
         }
         this.outboundRepository.delete(outbound);
+    }
+
+    @Override
+    @Transactional
+    public void alertDelayedOutbounds() {
+        List<RiskDelayedOutboundsProjection> delayedOutbounds = outboundRepository.findAllRiskDelayedOutbounds();
+        Map<String, List<RiskDelayedOutboundsProjection>> groupedByUser = delayedOutbounds.stream()
+                .collect(Collectors.groupingBy(RiskDelayedOutboundsProjection::getUserEmail));
+
+        for (Map.Entry<String, List<RiskDelayedOutboundsProjection>> entry : groupedByUser.entrySet()) {
+            String userEmail = entry.getKey();
+            List<RiskDelayedOutboundsProjection> userOutbounds = entry.getValue();
+
+            StringBuilder contentBuilder = new StringBuilder();
+            contentBuilder.append("Bạn có các đơn outbound có nguy cơ trễ:\n\n");
+
+            for (RiskDelayedOutboundsProjection outbound : userOutbounds) {
+                String invoice = inboundRepository.findById(outbound.getInboundID()).orElseThrow().getInvoice();
+                contentBuilder.append("Dự kiến xuất: ").append(outbound.getExpectedShippingDate())
+                        .append(" từ inbound có invoice: ").append(invoice).append("\n");
+            }
+
+            String content = contentBuilder.toString();
+            mailService.sendMail(userEmail, "Risk Delayed Outbound", content);
+            System.out.println("Gửi mail tới user: " + userEmail);
+        }
     }
 }
