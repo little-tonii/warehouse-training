@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.training.warehouse.dto.request.CreateOutboundRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
+import com.training.warehouse.dto.response.StockProjection;
 import com.training.warehouse.entity.UserEntity;
 
 public interface OutboundService {
@@ -15,4 +16,5 @@ public interface OutboundService {
 
     void deleteOutboundById(long id);
 
+    StockProjection getStockSummaryByMonth(int month, int year);
 }

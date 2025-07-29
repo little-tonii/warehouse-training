@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.training.warehouse.dto.response.StockProjection;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -184,5 +185,10 @@ public class OutboundServiceImpl implements OutboundService {
             throw new BadRequestException("can not delete outbound");
         }
         this.outboundRepository.delete(outbound);
+    }
+
+    @Override
+    public StockProjection getStockSummaryByMonth(int month, int year) {
+        return outboundRepository.findAllDiffQuantity(month, year);
     }
 }

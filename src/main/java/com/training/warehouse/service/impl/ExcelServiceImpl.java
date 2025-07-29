@@ -24,7 +24,17 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import com.training.warehouse.service.ExcelService;
+import com.training.warehouse.dto.response.StockProjection;
 
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.xddf.usermodel.PresetColor;
+import org.apache.poi.xddf.usermodel.XDDFColor;
+import org.apache.poi.xddf.usermodel.XDDFShapeProperties;
+import org.apache.poi.xddf.usermodel.XDDFSolidFillProperties;
+import org.apache.poi.xddf.usermodel.chart.*;
+import org.apache.poi.xssf.usermodel.*;
+
+import java.util.*;
 @Service
 public class ExcelServiceImpl implements ExcelService {
 
@@ -90,5 +100,88 @@ public class ExcelServiceImpl implements ExcelService {
         XDDFChartData.Series series = pieData.addSeries(categories, values);
         series.setTitle("Distribution", null);
         chart.plot(pieData);
+    }
+
+    public static XSSFWorkbook createStockSummary(StockProjection data){
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet summarySheet = workbook.createSheet("Summary");
+        ExcelServiceImpl.clearSheet(summarySheet);
+        int rowIdx = 0;
+
+        Row header = summarySheet.createRow(rowIdx++);
+        header.createCell(0).setCellValue("Start Quantity");
+        header.createCell(1).setCellValue("End Quantity");
+        header.createCell(2).setCellValue("Diff Quantity");
+
+        Row rowData =summarySheet.createRow(rowIdx);
+        rowData.createCell(0).setCellValue(
+                data.getStartQuantity() != null ? data.getStartQuantity() : 0.0
+        );
+        rowData.createCell(1).setCellValue(
+                data.getEndQuantity() != null ? data.getEndQuantity() : 0.0
+        );
+        rowData.createCell(2).setCellValue(data.getDiffQuantity());
+
+        return workbook;
+    }
+
+    public static void drawStockSummaryBarChart(XSSFWorkbook workbook, int col1, int row1, int col2, int row2, int month) {
+        XSSFSheet sheet = workbook.getSheet("Summary");
+        if (sheet == null) {
+            throw new IllegalStateException("Sheet 'Summary' không tồn tại.");
+        }
+
+        XSSFDrawing drawing = sheet.createDrawingPatriarch();
+        XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, col1, row1, col2, row2);
+        XSSFChart chart = drawing.createChart(anchor);
+        chart.setTitleText("Stock Quantity Chart Month " + month);
+        chart.setTitleOverlay(false);
+        chart.getOrAddLegend().setPosition(LegendPosition.RIGHT);
+
+        XDDFCategoryAxis xAxis = chart.createCategoryAxis(AxisPosition.BOTTOM);
+        xAxis.setTitle("Time");
+        XDDFValueAxis yAxis = chart.createValueAxis(AxisPosition.LEFT);
+        yAxis.setTitle("Quantity");
+
+        // Lấy dữ liệu từ sheet
+        double start = 0.0;
+        double end = 0.0;
+        Row row = sheet.getRow(1);
+        if (row != null) {
+            Cell startCell = row.getCell(0);
+            Cell endCell = row.getCell(1);
+            start = (startCell != null && startCell.getCellType() == CellType.NUMERIC) ? startCell.getNumericCellValue() : 0.0;
+            end = (endCell != null && endCell.getCellType() == CellType.NUMERIC) ? endCell.getNumericCellValue() : 0.0;
+        }
+
+        // Dữ liệu cho biểu đồ
+        String[] xLabels = new String[] { "Start", "End" };
+        Double[] yValues = new Double[] { start, end };
+
+        XDDFDataSource<String> dataX = XDDFDataSourcesFactory.fromArray(xLabels);
+        XDDFNumericalDataSource<Double> dataY = XDDFDataSourcesFactory.fromArray(yValues);
+
+        XDDFChartData data = chart.createData(ChartTypes.BAR, xAxis, yAxis);
+        XDDFBarChartData bar = (XDDFBarChartData) data;
+        bar.setBarDirection(BarDirection.COL);
+
+        XDDFChartData.Series series = data.addSeries(dataX, dataY);
+        series.setTitle("Stock Quantity", null);
+
+        XDDFShapeProperties dataProps = new XDDFShapeProperties();
+        dataProps.setFillProperties(new XDDFSolidFillProperties(XDDFColor.from(PresetColor.BLUE)));
+        series.setShapeProperties(dataProps);
+
+        chart.plot(data);
+    }
+
+    public static void clearSheet(XSSFSheet sheet) {
+        int lastRow = sheet.getLastRowNum();
+        for (int i = lastRow; i >= 0; i--) {
+            XSSFRow row = sheet.getRow(i);
+            if (row != null) {
+                sheet.removeRow(row);
+            }
+        }
     }
 }
