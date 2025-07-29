@@ -3,6 +3,7 @@ package com.training.warehouse.service.impl;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,15 @@ import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.InboundService;
 
 import lombok.AllArgsConstructor;
+import com.training.warehouse.dto.request.InboundCreateRequest;
+import com.training.warehouse.dto.response.FileUploadResult;
+import com.training.warehouse.dto.response.InboundResponse;
+import com.training.warehouse.entity.UserEntity;
+import com.training.warehouse.enumeric.OrderStatus;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.*;
+import java.util.function.Consumer;
 
 @Service
 @AllArgsConstructor
@@ -52,5 +62,103 @@ public class InboundServiceImpl implements InboundService {
         });
         return;
     }
+    @Override
+    @Transactional
+    public InboundResponse createInbound(InboundCreateRequest dto) {
+        dto.validate();
+        UserEntity currUser = (UserEntity) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
 
+        InboundEntity saved = null;
+        Long savedId = null;
+        List<FileUploadResult> results = new ArrayList<>();
+        try {
+            List<MultipartFile> attachments = dto.getAttachments();
+
+            InboundEntity entity = InboundEntity.builder()
+                    .invoice(dto.getInvoice())
+                    .productType(dto.getProductType())
+                    .supplierCd(dto.getSupplierCd())
+                    .receiveDate(dto.getReceiveDate())
+                    .status(OrderStatus.NOT_EXPORTED)
+                    .quantity(dto.getQuantity())
+                    .user(currUser)
+                    .build();
+
+            try {
+                saved = inboundRepository.save(entity);
+                savedId = saved.getId();
+            } catch (Exception e) {
+                throw new RuntimeException("Lỗi khi lưu đơn nhập: " + e.getMessage(), e);
+            }
+
+            if (attachments != null && !attachments.isEmpty()) {
+                for (MultipartFile file : attachments) {
+                    if (file.isEmpty()) continue;
+                    String originFileName = file.getOriginalFilename();
+                    FileUploadResult result = new FileUploadResult();
+                    result.setFileName(originFileName);
+
+                    String fileKey = UUID.randomUUID().toString();
+                    String filePath = savedId + "/" + fileKey;
+                    try {
+                        fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, filePath, file);
+                        result.setUploaded(true);
+                    } catch (Exception e) {
+                        result.setUploaded(false);
+                        result.setErrorMessage("Upload failed: " + e.getMessage());
+                        results.add(result);
+                        continue;
+                    }
+
+                    try {
+                        InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
+                                .fileName(originFileName)
+                                .inboundId(savedId)
+                                .filePath(filePath)
+                                .build();
+
+                        inboundAttachmentRepository.save(inboundAttachment);
+                        result.setSavedToDB(true);
+                    } catch (Exception e) {
+                        result.setSavedToDB(false);
+                        result.setErrorMessage("Database save failed: " + e.getMessage());
+
+                        try {
+                            fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, originFileName);
+                        } catch (Exception ex) {
+                            result.setErrorMessage(result.getErrorMessage() + ". Failed to rollback upload: " + ex.getMessage());
+                        }
+                    }
+                    results.add(result);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Tạo đơn nhập thất bại: " + e.getMessage(), e);
+        }
+
+        return mapToResponse(saved, results);
+    }
+
+    private InboundResponse mapToResponse(InboundEntity e, List<FileUploadResult> results) {
+
+        return InboundResponse.builder()
+                .id(e.getId())
+                .invoice(e.getInvoice())
+                .productType(e.getProductType())
+                .supplierCd(e.getSupplierCd())
+                .receiveDate(e.getReceiveDate())
+                .quantity(e.getQuantity())
+                .status(e.getStatus())
+                .createdAt(e.getCreatedAt())
+                .updatedAt(e.getUpdatedAt())
+                .results(results)
+                .build();
+    }
+
+    public static <T> void setIfNotNull(T value, Consumer<T> setter) {
+        if (value != null) setter.accept(value);
+    }
 }
