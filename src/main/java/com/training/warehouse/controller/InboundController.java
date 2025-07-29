@@ -16,6 +16,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 
+import com.training.warehouse.dto.request.InboundUpdateRequest;
+import com.training.warehouse.dto.response.InboundResponse;
+
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.http.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
+
 @Controller
 @RequestMapping("/api/inbound")
 @AllArgsConstructor
@@ -82,5 +95,83 @@ public class InboundController {
     public ResponseEntity<?> deleteById(@PathVariable @Min(value = 1, message = "inboundId must be greater than 0") long id) {
         inboundService.deleteInboundById(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @Operation(
+            method = "PUT",
+            summary = "update inbound",
+            parameters = {
+                    @Parameter(
+                            name = "id",
+                            in = ParameterIn.PATH,
+                            required = true,
+                            example = "123"
+                    )
+            },
+            requestBody = @RequestBody(
+                    required = true,
+                    content = {
+                            @Content(
+                                    mediaType = "multipart/form-data",
+                                    schema = @Schema(implementation = InboundUpdateRequest.class)
+                            )
+                    }
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Inbound updated successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = InboundResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Bad request – Invalid input",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Unauthorized – Missing or invalid token",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "Forbidden – No permission to update",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Not found – Inbound record does not exist",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Internal server error – Unexpected issue",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ExceptionResponse.class)
+                            )
+                    )
+            }
+    )
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateInbound(@PathVariable Long id,
+                                           @ModelAttribute @Valid InboundUpdateRequest request) {
+
+        return ResponseEntity.ok(inboundService.updateInbound(id, request));
     }
 }
