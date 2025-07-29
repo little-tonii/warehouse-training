@@ -14,6 +14,7 @@ import java.util.Optional;
 
 import com.training.warehouse.entity.UserEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
@@ -307,8 +308,9 @@ public class InboundServiceImpl implements InboundService {
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteInboundById(long inboundId) {
-        Optional<InboundEntity> inboundResult = inboundRepository.findById(inboundId);
+        Optional<InboundEntity> inboundResult  = inboundRepository.findById(inboundId);
         if (!inboundResult.isPresent()) {
             throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
         }
@@ -323,6 +325,10 @@ public class InboundServiceImpl implements InboundService {
             inboundAttachmentRepository.deleteById(attachment.getId());
         });
         inboundRepository.deleteById(inboundId);
+        attachments.forEach(attachment -> {
+            fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, attachment.getFilePath(),
+                    attachment.getFileName());
+        });
         return;
     }
 

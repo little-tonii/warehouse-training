@@ -22,6 +22,6 @@ public enum ShippingMethod {
                 return method;
             }
         }
-        throw new IllegalArgumentException("Invalid shipping method code: " + code);
+        throw new RuntimeException("Invalid shipping method code: " + code);
     }
 }

@@ -7,6 +7,7 @@ import com.training.warehouse.dto.response.RiskDelayedOutboundsProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.training.warehouse.entity.OutboundEntity;
@@ -14,6 +15,14 @@ import com.training.warehouse.dto.response.StockProjection;
 @Repository
 public interface OutboundRepository extends JpaRepository<OutboundEntity, Long> {
     List<OutboundEntity> findByInboundId(long inboundId);
+
+    @Query("""
+                SELECT outbound
+                FROM OutboundEntity outbound
+                WHERE (outbound.actualShippingDate IS NULL OR outbound.actualShippingDate > outbound.expectedShippingDate)
+                  AND outbound.createdAt BETWEEN :from AND :to
+            """)
+    List<OutboundEntity> findLateOutboundsCreatedBetween(LocalDateTime from, LocalDateTime to);
 //    List<OutboundEntity> findByInboundIdAndShippingDateBetween(Long inboundId, LocalDateTime start, LocalDateTime end);
 //    List<OutboundEntity> findByInboundIdAndShippingDateBefore(Long inboundId, LocalDateTime beforeDate);
 
