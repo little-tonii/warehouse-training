@@ -5,6 +5,7 @@ import com.training.warehouse.dto.response.CreateOutboundResponse;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.service.OutboundService;
+import com.training.warehouse.service.impl.ExcelServiceImpl;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -12,7 +13,6 @@ import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 
-import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -30,6 +30,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import com.training.warehouse.dto.response.StockProjection;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.constraints.Max;
+
+import java.io.ByteArrayOutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Year;
+
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/api/outbound")
@@ -356,5 +371,50 @@ public class OutboundController {
     public ResponseEntity<?> delete(@PathVariable @Min(value = 1, message = "outboundId must be greater than 0") long id) {
         this.outboundService.deleteOutboundById(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @Operation(
+            parameters = {
+                    @Parameter(name = "month", example = "3" ,schema = @Schema(type = "integer")),
+                    @Parameter(name = "year", example = "2025",schema = @Schema(type = "integer"))
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            content = @Content(
+                                    mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                    schema = @Schema(type = "string", format = "binary")
+                            ))
+            })
+    @GetMapping(value = "/stock-summary-by-month",produces = "application/xlsx")
+    public ResponseEntity<byte[]> getStockSummaryByMonth(@RequestParam(name = "month", defaultValue = "1") @Min(1) @Max(12) int month,
+                                                         @RequestParam(name = "year") Integer year) {
+        if(year == null) year = Year.now().getValue();
+
+        StockProjection data = outboundService.getStockSummaryByMonth(month,year);
+
+        try (XSSFWorkbook workbook = ExcelServiceImpl.createStockSummary(data);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            int col1 = 4, col2 = 10;
+
+            ExcelServiceImpl.drawStockSummaryBarChart(workbook,col1,1,col2,10,month);
+
+            workbook.write(out);
+            byte[] fileContent = out.toByteArray();
+
+            String fileName = URLEncoder.encode("StockSummary-RPT1.xlsx", StandardCharsets.UTF_8);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(
+                    MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDisposition(ContentDisposition.attachment().filename(fileName).build());
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(fileContent.length)
+                    .body(fileContent);
+        } catch (Exception e) {
+            throw new RuntimeException("lỗi: "+e);
+        }
     }
 }
