@@ -12,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.training.warehouse.common.provider.EnvProvider;
 import com.training.warehouse.exception.BadRequestException;
-import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.service.FileStoreService;
 
 import io.minio.BucketExistsArgs;
@@ -54,18 +53,18 @@ public class FileStoreServiceImpl implements FileStoreService {
     public void uploadFile(String bucketName, String filePath, MultipartFile file) {
         String originalFileName = file.getOriginalFilename();
         if (originalFileName == null || originalFileName.isBlank()) {
-            throw new BadRequestException(ExceptionMessage.FILENAME_IS_NOT_VALID);
+            throw new BadRequestException("file name is not valid");
         }
         String cleanedFileName = Paths.get(originalFileName).getFileName().toString();
         if (!cleanedFileName.matches("^[a-zA-Z0-9._-]{1,255}$")) {
-            throw new BadRequestException(ExceptionMessage.FILENAME_IS_NOT_VALID);
+            throw new BadRequestException("file name is not valid");
         }
         if (filePath.contains("..")) {
-            throw new BadRequestException(ExceptionMessage.FILE_PATH_IS_NOT_VALID);
+            throw new BadRequestException("file path is not valid");
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new BadRequestException(ExceptionMessage.FILETYPE_NOT_ALLOWED);
+            throw new BadRequestException("filetype is not allowed");
         }
         String objectName = filePath.endsWith("/") ? filePath + cleanedFileName : filePath + "/" + cleanedFileName;
         try {
@@ -120,18 +119,18 @@ public class FileStoreServiceImpl implements FileStoreService {
     @Override
     public void uploadFile(String bucketName, String filePath, String fileName, byte[] file) {
         if (fileName == null || fileName.isBlank()) {
-            throw new BadRequestException(ExceptionMessage.FILENAME_IS_NOT_VALID);
+            throw new BadRequestException("filename is not valid");
         }
         String cleanedFileName = Paths.get(fileName).getFileName().toString();
         if (!cleanedFileName.matches("^[a-zA-Z0-9._-]{1,255}$")) {
-            throw new BadRequestException(ExceptionMessage.FILENAME_IS_NOT_VALID);
+            throw new BadRequestException("filename is not valid");
         }
         if (filePath.contains("..")) {
-            throw new BadRequestException(ExceptionMessage.FILE_PATH_IS_NOT_VALID);
+            throw new BadRequestException("filepath is not valid");
         }
         String contentType = URLConnection.guessContentTypeFromName(cleanedFileName);
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new BadRequestException(ExceptionMessage.FILETYPE_NOT_ALLOWED);
+            throw new BadRequestException("filetype is not allowed");
         }
         String objectName = filePath.endsWith("/") ? filePath + cleanedFileName : filePath + "/" + cleanedFileName;
         try (ByteArrayInputStream bais = new ByteArrayInputStream(file)) {

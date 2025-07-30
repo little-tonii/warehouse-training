@@ -64,6 +64,9 @@ public class WebSecurityConfig {
                                                 HttpMethod.DELETE,
                                                 "/api/outbound/*")
                                 .authenticated()
+                                .requestMatchers(HttpMethod.PUT,
+                                "/api/outbound/*")
+                                .authenticated()
                                 // others
                                 .anyRequest().denyAll());
                 http.exceptionHandling(ex -> ex
