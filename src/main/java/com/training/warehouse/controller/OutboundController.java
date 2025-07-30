@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @io.swagger.v3.oas.annotations.tags.Tag(name = "outbound")
 @AllArgsConstructor
 @Validated
+@SecurityRequirement(name = "bearerAuth")
 public class OutboundController {
 
     private final OutboundService outboundService;

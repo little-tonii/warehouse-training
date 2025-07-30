@@ -24,17 +24,11 @@ public interface OutboundRepository extends JpaRepository<OutboundEntity, Long> 
 
     @Query(value = """
             SELECT
-                COALESCE(o.product_type, i.product_type) AS productType,
-                COALESCE(o.total_qty, 0) - COALESCE(i.total_qty, 0) AS stockQuantity
-            FROM
-                (SELECT product_type, SUM(quantity) AS total_qty
-                 FROM outbounds
-                 GROUP BY product_type) o
-            FULL OUTER JOIN
-                (SELECT product_type, SUM(quantity) AS total_qty
-                 FROM inbounds
-                 GROUP BY product_type) i
-            ON o.product_type = i.product_type
+                i.product_type as productType,
+                COALESCE(SUM(i.quantity), 0) - SUM(o.quantity) AS stockQuantity
+            FROM inbounds i
+            LEFT JOIN outbounds o ON o.inb_id = i.id
+            GROUP BY i.product_type
             """,nativeQuery = true)
     List<StockProductType> findAllStockByProductType();
 }
