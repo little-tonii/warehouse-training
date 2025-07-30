@@ -19,57 +19,58 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class WebSecurityConfig {
 
-        private final JwtAuthenticationFilter jwtAuthenticationFilter;
-        private final AuthenticationEntryPoint authenticationEntryPoint;
-        private final AccessDeniedHandler accessDeniedHandler;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final AccessDeniedHandler accessDeniedHandler;
 
-        @Bean
-        protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-                http.csrf(csrf -> csrf.disable());
-                http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-                http.authorizeHttpRequests(auth -> auth
-                                // swagger docs
-                                .requestMatchers(
-                                                "/swagger-ui/**",
-                                                "/v3/api-docs/**",
-                                                "/webjars/**")
-                                .permitAll()
-                                // auth
-                                .requestMatchers(
-                                                HttpMethod.POST,
-                                                "/api/auth/register",
-                                                "/api/auth/login")
-                                .permitAll()
-                                // user
-                                .requestMatchers(
-                                                HttpMethod.PUT,
-                                                "/api/user")
-                                .authenticated()
-                                // inbound
-                                .requestMatchers(
-                                                HttpMethod.DELETE,
-                                                "/api/inbound/*")
-                                .authenticated()
-                                // outbound
-                                .requestMatchers(
-                                                HttpMethod.GET,
-                                                "/api/outbound/*/confirm",
-                                                "/api/outbound/late-statistics")
-                                .authenticated()
-                                .requestMatchers(
-                                                HttpMethod.POST,
-                                                "/api/outbound")
-                                .authenticated()
-                                .requestMatchers(
-                                                HttpMethod.DELETE,
-                                                "/api/outbound/*")
-                                .authenticated()
-                                // others
-                                .anyRequest().denyAll());
-                http.exceptionHandling(ex -> ex
-                                .authenticationEntryPoint(authenticationEntryPoint)
-                                .accessDeniedHandler(accessDeniedHandler));
-                http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-                return http.build();
-        }
+    @Bean
+    protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable());
+        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.authorizeHttpRequests(auth -> auth
+                // swagger docs
+                .requestMatchers(
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/webjars/**")
+                .permitAll()
+                // auth
+                .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/auth/register",
+                        "/api/auth/login")
+                .permitAll()
+                // user
+                .requestMatchers(
+                        HttpMethod.PUT,
+                        "/api/user")
+                .authenticated()
+                // inbound
+                .requestMatchers(
+                        HttpMethod.DELETE,
+                        "/api/inbound/*")
+                .authenticated()
+                // outbound
+                .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/outbound/*/confirm",
+                        "/api/outbound/late-statistics")
+                .authenticated()
+                .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/outbound")
+                .authenticated()
+                .requestMatchers(
+                        HttpMethod.DELETE,
+                        "/api/outbound/*")
+                .authenticated()
+                .requestMatchers("/api/inbound/*").authenticated()
+                // others
+                .anyRequest().authenticated());
+        http.exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler));
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
 }

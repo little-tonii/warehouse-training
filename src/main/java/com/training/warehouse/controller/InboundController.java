@@ -17,8 +17,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 
-import com.training.warehouse.dto.request.InboundCreateRequest;
-import com.training.warehouse.dto.response.InboundResponse;
+import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.response.CreateInboundResponse;
 
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import org.springframework.http.*;
@@ -102,7 +102,7 @@ public class InboundController {
                     required = true,
                     content = @Content(
                             mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(implementation = InboundCreateRequest.class)
+                            schema = @Schema(implementation = CreateInboundRequest.class)
                     )
             ),
             responses = {
@@ -111,7 +111,7 @@ public class InboundController {
                             description = "create inbound successfully",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = InboundResponse.class)
+                                    schema = @Schema(implementation = CreateInboundResponse.class)
                             )
                     ),
                     @ApiResponse(
@@ -165,7 +165,7 @@ public class InboundController {
             }
     )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createInbound(@ModelAttribute @Valid InboundCreateRequest request) {
+    public ResponseEntity<?> createInbound(@ModelAttribute @Valid CreateInboundRequest request) {
         return ResponseEntity.ok(inboundService.createInbound(request));
     }
 }

@@ -3,6 +3,7 @@ package com.training.warehouse.service.impl;
 import java.util.List;
 import java.util.Optional;
 
+import com.training.warehouse.exception.ConflicException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +21,9 @@ import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.InboundService;
 
 import lombok.AllArgsConstructor;
-import com.training.warehouse.dto.request.InboundCreateRequest;
+import com.training.warehouse.dto.request.CreateInboundRequest;
 import com.training.warehouse.dto.response.FileUploadResult;
-import com.training.warehouse.dto.response.InboundResponse;
+import com.training.warehouse.dto.response.CreateInboundResponse;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.OrderStatus;
 import org.springframework.web.multipart.MultipartFile;
@@ -64,7 +65,7 @@ public class InboundServiceImpl implements InboundService {
     }
     @Override
     @Transactional
-    public InboundResponse createInbound(InboundCreateRequest dto) {
+    public CreateInboundResponse createInbound(CreateInboundRequest dto) {
         dto.validate();
         UserEntity currUser = (UserEntity) SecurityContextHolder
                 .getContext()
@@ -91,7 +92,7 @@ public class InboundServiceImpl implements InboundService {
                 saved = inboundRepository.save(entity);
                 savedId = saved.getId();
             } catch (Exception e) {
-                throw new RuntimeException("Lỗi khi lưu đơn nhập: " + e.getMessage(), e);
+                throw new ConflicException("Lỗi khi lưu đơn nhập: " + e.getMessage());
             }
 
             if (attachments != null && !attachments.isEmpty()) {
@@ -136,25 +137,25 @@ public class InboundServiceImpl implements InboundService {
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("Tạo đơn nhập thất bại: " + e.getMessage(), e);
+            throw new ConflicException("Tạo đơn nhập thất bại: " + e.getMessage());
         }
 
         return mapToResponse(saved, results);
     }
 
-    private InboundResponse mapToResponse(InboundEntity e, List<FileUploadResult> results) {
+    private CreateInboundResponse mapToResponse(InboundEntity e, List<FileUploadResult> results) {
 
-        return InboundResponse.builder()
+        return CreateInboundResponse.builder()
                 .id(e.getId())
-                .invoice(e.getInvoice())
-                .productType(e.getProductType())
-                .supplierCd(e.getSupplierCd())
-                .receiveDate(e.getReceiveDate())
-                .quantity(e.getQuantity())
-                .status(e.getStatus())
-                .createdAt(e.getCreatedAt())
-                .updatedAt(e.getUpdatedAt())
-                .results(results)
+//                .invoice(e.getInvoice())
+//                .productType(e.getProductType())
+//                .supplierCd(e.getSupplierCd())
+//                .receiveDate(e.getReceiveDate())
+//                .quantity(e.getQuantity())
+//                .status(e.getStatus())
+//                .createdAt(e.getCreatedAt())
+//                .updatedAt(e.getUpdatedAt())
+//                .results(results)
                 .build();
     }
 

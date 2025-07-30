@@ -1,9 +1,9 @@
 package com.training.warehouse.service;
 
-import com.training.warehouse.dto.request.InboundCreateRequest;
-import com.training.warehouse.dto.response.InboundResponse;
+import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.response.CreateInboundResponse;
 
 public interface InboundService {
     void deleteInboundById(long inboundId);
-    InboundResponse createInbound(InboundCreateRequest request);
+    CreateInboundResponse createInbound(CreateInboundRequest request);
 }
