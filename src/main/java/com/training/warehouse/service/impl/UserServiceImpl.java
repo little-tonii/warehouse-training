@@ -10,7 +10,6 @@ import com.training.warehouse.dto.response.UserUpdateInfoResponse;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.exception.ConflicException;
 import com.training.warehouse.exception.UnauthorizedException;
-import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.UserRepository;
 import com.training.warehouse.service.UserService;
 
@@ -27,12 +26,12 @@ public class UserServiceImpl implements UserService {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Optional<UserEntity> userResult = this.userRepository.findByUsername(username);
         if (!userResult.isPresent()) {
-            throw new UnauthorizedException(ExceptionMessage.UNAUTHORIZED);
+            throw new UnauthorizedException("unauthorized");
         }
         UserEntity user = userResult.get();
         Optional<UserEntity> userByEmail = this.userRepository.findByEmail(request.getEmail());
         if (userByEmail.isPresent() && userByEmail.get().getId() != user.getId()) {
-            throw new ConflicException(ExceptionMessage.EMAIL_ALREADY_EXIST);
+            throw new ConflicException("email already exists");
         }
         user.setEmail(request.getEmail());
         user.setFullName(request.getFullName());

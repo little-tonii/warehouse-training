@@ -19,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.training.warehouse.dto.request.CreateOutboundRequest;
+import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
+import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.entity.OutboundAttachmentEntity;
@@ -191,4 +193,31 @@ public class OutboundServiceImpl implements OutboundService {
     public List<StockProductType> getAllStockByProductType(){
         return outboundRepository.findAllStockByProductType();
     }
+
+    @Override
+    public UpdateOutboundByIdResponse updateOutboundById(long outboundId, UpdateOutboundByIdRequest request) {
+        Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
+        if (outboundResult.isEmpty()) {
+            throw new NotFoundException("outbound not found");
+        }
+        OutboundEntity outbound = outboundResult.get();
+        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
+        if (inboundResult.isEmpty()) {
+            throw new NotFoundException("inbound not found");
+        }
+        InboundEntity inbound = inboundResult.get();
+        List<OutboundEntity> outbounds = this.outboundRepository.findByInboundId(inbound.getId());
+        long totalOutboundQuantity = outbounds.stream().mapToLong((e) -> e.getQuantity()).sum();
+        if (totalOutboundQuantity - outbound.getQuantity() + request.getQuantity() > inbound.getQuantity()) {
+            throw new BadRequestException("not enough quantity");
+        }
+        outbound.setQuantity(request.getQuantity());
+        outbound.setExpectedShippingDate(request.getExpectedShippingDate());
+        outbound.setShippingMethod(ShippingMethod.fromCode(request.getShippingMethod()));
+        OutboundEntity updatedOutbound = this.outboundRepository.save(outbound);
+        return UpdateOutboundByIdResponse.builder()
+                .id(updatedOutbound.getId())
+                .build();
+    }
+
 }
