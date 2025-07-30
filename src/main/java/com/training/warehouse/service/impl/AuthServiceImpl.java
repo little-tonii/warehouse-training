@@ -15,7 +15,6 @@ import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.Role;
 import com.training.warehouse.exception.ConflicException;
 import com.training.warehouse.exception.UnauthorizedException;
-import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.UserRepository;
 import com.training.warehouse.service.AuthService;
 
@@ -33,11 +32,11 @@ public class AuthServiceImpl implements AuthService{
     public AuthRegisterResponse register(AuthRegisterRequest request) {
         Optional<UserEntity> user = this.userRepository.findByUsername(request.getUsername());
         if (user.isPresent()) {
-            throw new ConflicException(ExceptionMessage.USER_ALREADY_EXIST);
+            throw new ConflicException("user already exists");
         }
         user = this.userRepository.findByEmail(request.getEmail());
         if (user.isPresent()) {
-            throw new ConflicException(ExceptionMessage.USER_ALREADY_EXIST);
+            throw new ConflicException("user already exists");
         }
         UserEntity newUser = UserEntity.builder()
                 .username(request.getUsername())
@@ -55,7 +54,7 @@ public class AuthServiceImpl implements AuthService{
     public AuthLoginResponse login(AuthLoginRequest request) {
         Optional<UserEntity> user = this.userRepository.findByUsername(request.getUsername());
         if (!user.isPresent() || !this.passwordEncoder.matches(request.getPassword(), user.get().getPassword())) {
-            throw new UnauthorizedException(ExceptionMessage.UNAUTHORIZED);
+            throw new UnauthorizedException("unauthorized");
         }
         UserEntity presentUser = user.get();
         Map<String, Object> claims = Map.of(

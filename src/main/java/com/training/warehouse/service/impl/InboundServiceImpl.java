@@ -13,7 +13,6 @@ import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.entity.OutboundEntity;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.NotFoundException;
-import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundRepository;
@@ -45,11 +44,11 @@ public class InboundServiceImpl implements InboundService {
     public void deleteInboundById(long inboundId) {
         Optional<InboundEntity> inboundResult = inboundRepository.findById(inboundId);
         if (!inboundResult.isPresent()) {
-            throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
+            throw new NotFoundException("inbound not found");
         }
         List<OutboundEntity> outboundEntities = outboundRepository.findByInboundId(inboundId);
         if (outboundEntities.size() > 0) {
-            throw new BadRequestException(ExceptionMessage.CANNOT_DELETE_INBOUND);
+            throw new BadRequestException("cannot delete inbound");
         }
         InboundEntity inbound = inboundResult.get();
         List<InboundAttachmentEntity> attachments = inbound.getAttachments();

@@ -15,7 +15,6 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.training.warehouse.exception.NotFoundException;
-import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.repository.UserRepository;
 
@@ -36,7 +35,7 @@ public class AuthenticationConfig {
     @Bean
     protected UserDetailsService userDetailsService() {
         return username -> userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException(ExceptionMessage.USER_NOT_FOUND));
+                .orElseThrow(() -> new NotFoundException("user not found"));
     }
 
     @Bean
@@ -50,7 +49,7 @@ public class AuthenticationConfig {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.setContentType("application/json");
             ExceptionResponse body = ExceptionResponse.builder()
-                    .messages(List.of(ExceptionMessage.UNAUTHORIZED))
+                    .messages(List.of("unauthorized"))
                     .build();
             response.getWriter().write(objectMapper.writeValueAsString(body));
         };
@@ -62,7 +61,7 @@ public class AuthenticationConfig {
             response.setStatus(HttpStatus.FORBIDDEN.value());
             response.setContentType("application/json");
             ExceptionResponse body = ExceptionResponse.builder()
-                    .messages(List.of(ExceptionMessage.FOBBIDEN))
+                    .messages(List.of("forbbiden"))
                     .build();
             response.getWriter().write(objectMapper.writeValueAsString(body));
         };
