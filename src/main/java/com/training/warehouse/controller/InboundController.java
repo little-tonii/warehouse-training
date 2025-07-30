@@ -1,5 +1,6 @@
 package com.training.warehouse.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -21,6 +22,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @io.swagger.v3.oas.annotations.tags.Tag(name = "inbound")
 @Validated
+@SecurityRequirement(name = "bearerAuth")
 public class InboundController {
     private final InboundService inboundService;
 
