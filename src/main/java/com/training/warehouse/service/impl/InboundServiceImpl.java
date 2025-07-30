@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.training.warehouse.exception.ConflicException;
+import com.training.warehouse.service.DtoValidationService;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,96 +66,71 @@ public class InboundServiceImpl implements InboundService {
     @Override
     @Transactional
     public CreateInboundResponse createInbound(CreateInboundRequest dto) {
-        dto.validate();
+        DtoValidationService.validateCreateInboundRequest(dto);
+
         UserEntity currUser = (UserEntity) SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getPrincipal();
 
-        InboundEntity saved = null;
-        Long savedId = null;
-        List<FileUploadResult> results = new ArrayList<>();
+        InboundEntity saved;
+        Long savedId;
+
+        List<MultipartFile> attachments = dto.getAttachments();
+
+        InboundEntity entity = InboundEntity.builder()
+                .invoice(dto.getInvoice())
+                .productType(dto.getProductType())
+                .supplierCd(dto.getSupplierCd())
+                .receiveDate(dto.getReceiveDate())
+                .status(OrderStatus.NOT_EXPORTED)
+                .quantity(dto.getQuantity())
+                .user(currUser)
+                .build();
+
         try {
-            List<MultipartFile> attachments = dto.getAttachments();
-
-            InboundEntity entity = InboundEntity.builder()
-                    .invoice(dto.getInvoice())
-                    .productType(dto.getProductType())
-                    .supplierCd(dto.getSupplierCd())
-                    .receiveDate(dto.getReceiveDate())
-                    .status(OrderStatus.NOT_EXPORTED)
-                    .quantity(dto.getQuantity())
-                    .user(currUser)
-                    .build();
-
-            try {
-                saved = inboundRepository.save(entity);
-                savedId = saved.getId();
-            } catch (Exception e) {
-                throw new ConflicException("Lỗi khi lưu đơn nhập: " + e.getMessage());
-            }
-
-            if (attachments != null && !attachments.isEmpty()) {
-                for (MultipartFile file : attachments) {
-                    if (file.isEmpty()) continue;
-                    String originFileName = file.getOriginalFilename();
-                    FileUploadResult result = new FileUploadResult();
-                    result.setFileName(originFileName);
-
-                    String fileKey = UUID.randomUUID().toString();
-                    String filePath = savedId + "/" + fileKey;
-                    try {
-                        fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, filePath, file);
-                        result.setUploaded(true);
-                    } catch (Exception e) {
-                        result.setUploaded(false);
-                        result.setErrorMessage("Upload failed: " + e.getMessage());
-                        results.add(result);
-                        continue;
-                    }
-
-                    try {
-                        InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
-                                .fileName(originFileName)
-                                .inboundId(savedId)
-                                .filePath(filePath)
-                                .build();
-
-                        inboundAttachmentRepository.save(inboundAttachment);
-                        result.setSavedToDB(true);
-                    } catch (Exception e) {
-                        result.setSavedToDB(false);
-                        result.setErrorMessage("Database save failed: " + e.getMessage());
-
-                        try {
-                            fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, originFileName);
-                        } catch (Exception ex) {
-                            result.setErrorMessage(result.getErrorMessage() + ". Failed to rollback upload: " + ex.getMessage());
-                        }
-                    }
-                    results.add(result);
-                }
-            }
+            saved = inboundRepository.save(entity);
+            savedId = saved.getId();
         } catch (Exception e) {
-            throw new ConflicException("Tạo đơn nhập thất bại: " + e.getMessage());
+            throw new ConflicException("Lỗi khi lưu đơn nhập: " + e.getMessage());
         }
 
-        return mapToResponse(saved, results);
+        if (attachments != null && !attachments.isEmpty()) {
+            for (MultipartFile file : attachments) {
+                if (file.isEmpty()) continue;
+
+                String originFileName = file.getOriginalFilename();
+                String fileKey = UUID.randomUUID().toString();
+                String filePath = savedId + "/" + fileKey;
+
+                try {
+                    fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, filePath, file);
+
+                    InboundAttachmentEntity inboundAttachment = InboundAttachmentEntity.builder()
+                            .fileName(originFileName)
+                            .inboundId(savedId)
+                            .filePath(filePath)
+                            .build();
+
+                    inboundAttachmentRepository.save(inboundAttachment);
+
+                } catch (Exception e) {
+                    try {
+                        fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, originFileName);
+                    } catch (Exception ex) {
+                    }
+                    throw new ConflicException("Upload hoặc lưu file thất bại: " + e.getMessage());
+                }
+            }
+        }
+
+        return mapToResponse(saved);
     }
 
-    private CreateInboundResponse mapToResponse(InboundEntity e, List<FileUploadResult> results) {
+    private CreateInboundResponse mapToResponse(InboundEntity e) {
 
         return CreateInboundResponse.builder()
                 .id(e.getId())
-//                .invoice(e.getInvoice())
-//                .productType(e.getProductType())
-//                .supplierCd(e.getSupplierCd())
-//                .receiveDate(e.getReceiveDate())
-//                .quantity(e.getQuantity())
-//                .status(e.getStatus())
-//                .createdAt(e.getCreatedAt())
-//                .updatedAt(e.getUpdatedAt())
-//                .results(results)
                 .build();
     }
 

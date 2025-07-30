@@ -65,6 +65,10 @@ public class WebSecurityConfig {
                         "/api/outbound/*")
                 .authenticated()
                 .requestMatchers("/api/inbound/*").authenticated()
+
+                //
+                .requestMatchers(HttpMethod.POST,
+                        "/api/inbound/*").authenticated()
                 // others
                 .anyRequest().authenticated());
         http.exceptionHandling(ex -> ex
