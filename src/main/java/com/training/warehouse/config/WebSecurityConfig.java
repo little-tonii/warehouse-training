@@ -52,7 +52,7 @@ public class WebSecurityConfig {
                                 .authenticated()
                                 .requestMatchers(
                                                 HttpMethod.POST,
-                                                "/api/inbound/*")
+                                                "/api/inbound")
                                 .authenticated()
                                 // outbound
                                 .requestMatchers(
