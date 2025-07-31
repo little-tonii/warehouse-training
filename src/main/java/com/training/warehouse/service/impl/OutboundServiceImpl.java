@@ -37,11 +37,6 @@ import com.training.warehouse.repository.OutboundRepository;
 
 import lombok.AllArgsConstructor;
 
-import java.util.*;
-
-import com.training.warehouse.dto.response.RiskDelayedOutboundsProjection;
-
-
 @Service
 @AllArgsConstructor
 public class OutboundServiceImpl implements OutboundService {
@@ -52,7 +47,6 @@ public class OutboundServiceImpl implements OutboundService {
     private final PdfService pdfService;
     private final OutboundAttachmentRepository outboundAttachmentRepository;
     private final ExcelService excelService;
-    private final MailService mailService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
