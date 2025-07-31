@@ -1,8 +1,6 @@
 package com.training.warehouse.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
 import com.training.warehouse.dto.request.CreateOutboundRequest;
 import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
