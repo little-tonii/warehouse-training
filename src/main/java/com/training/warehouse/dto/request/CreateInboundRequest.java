@@ -41,6 +41,6 @@ public class CreateInboundRequest {
     private long quantity;
 
     @NotNull(message = "Attachments must not be null")
-    @Size(min = 1, message = "At least one attachment is required")
+    @Size(min = 1, max = 5, message = "Number of attachments must be between 1 and 5")
     private List<MultipartFile> attachments;
 }
