@@ -29,7 +29,6 @@ import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.ShippingMethod;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.NotFoundException;
-import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundAttachmentRepository;
@@ -57,15 +56,15 @@ public class OutboundServiceImpl implements OutboundService {
     public byte[] confirmOutboundById(long outboundId) {
         Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
         if (outboundResult.isEmpty()) {
-            throw new NotFoundException(ExceptionMessage.OUTBOUND_NOT_FOUND);
+            throw new NotFoundException("outbound not found");
         }
         OutboundEntity outbound = outboundResult.get();
         if (outbound.isConfirmed()) {
-            throw new BadRequestException(ExceptionMessage.OUTBOUND_CONFIRMED);
+            throw new BadRequestException("outbound was confirmed");
         }
         Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
         if (inboundResult.isEmpty()) {
-            throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
+            throw new NotFoundException("inbound not found");
         }
         List<InboundAttachmentEntity> inboundAttachments = this.inboundAttachmentRepository
                 .findByInboundId(outbound.getInboundId());
