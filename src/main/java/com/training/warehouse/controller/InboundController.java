@@ -34,7 +34,6 @@ import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 public class InboundController {
     private final InboundService inboundService;
 
-
     @io.swagger.v3.oas.annotations.Operation(
         method = "DELETE",
         summary = "delete inbound by id",

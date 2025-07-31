@@ -3,25 +3,16 @@ package com.training.warehouse.controller;
 import com.training.warehouse.dto.request.CreateOutboundRequest;
 import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
-import com.training.warehouse.dto.response.StockProductType;
 import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
-import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.service.OutboundService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -444,24 +435,5 @@ public class OutboundController {
         @PathVariable @Min(value = 1, message = "outboundId must be greater than 0") long id,
         @RequestBody @Valid UpdateOutboundByIdRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(this.outboundService.updateOutboundById(id, request));
-    }
-
-    @Operation(
-            method = "GET", summary = "get all stock quantity",
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    array = @ArraySchema(schema = @Schema(implementation = StockProductType.class)
-                                    )
-                            )
-                    )
-            }
-    )
-    @GetMapping(value = "/stock")
-    public ResponseEntity<?> getStockSummaryByMonth() {
-        List<StockProductType> data = outboundService.getAllStockByProductType();
-        return ResponseEntity.status(HttpStatus.OK).body(data);
     }
 }

@@ -19,6 +19,4 @@ public interface OutboundService {
     void deleteOutboundById(long id);
 
     UpdateOutboundByIdResponse updateOutboundById(long outboundId, UpdateOutboundByIdRequest request);
-    List<StockProductType> getAllStockByProductType();
-
 }

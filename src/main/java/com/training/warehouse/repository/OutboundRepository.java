@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.training.warehouse.dto.response.StockProductType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -24,14 +23,4 @@ public interface OutboundRepository extends JpaRepository<OutboundEntity, Long> 
     List<OutboundEntity> findLateOutboundsCreatedBetween(LocalDateTime from, LocalDateTime to);
 
     Optional<OutboundEntity> findFirstByInboundId(long inboundId);
-
-    @Query(value = """
-            SELECT
-                i.product_type as productType,
-                COALESCE(SUM(i.quantity), 0) - SUM(o.quantity) AS stockQuantity
-            FROM inbounds i
-            LEFT JOIN outbounds o ON o.inb_id = i.id
-            GROUP BY i.product_type
-            """,nativeQuery = true)
-    List<StockProductType> findAllStockByProductType();
 }
