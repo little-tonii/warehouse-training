@@ -82,6 +82,7 @@ public class InboundServiceImpl implements InboundService {
                 InboundAttachmentEntity.builder()
                     .fileName(request.getAttachments().get(i).getOriginalFilename())
                     .filePath(filePaths.get(i))
+                    .inboundId(newInbound.getId())
                     .build()
             );
         }

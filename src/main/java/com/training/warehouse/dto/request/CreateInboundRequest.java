@@ -9,8 +9,6 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,40 +17,34 @@ import java.util.List;
 @Data
 public class CreateInboundRequest {
     @Size(max = 9, min = 9)
-    @NotNull
-    @JsonProperty("invoice")
-    @Pattern(regexp = "\\d{9}", message = "Invoice must be exactly 9 digits")
+    @NotNull(message = "invoice must not be null")
+    @Pattern(regexp = "\\d{9}", message = "invoice must be exactly 9 digits")
     private String invoice;
 
-    @NotNull
-    @JsonProperty("product_type")
-    @Pattern(regexp = "Aircon|Spare_part", message = "Invalid product type")
+    @NotNull(message = "product type must not be null")
+    @Pattern(regexp = "Aircon|Spare_part", message = "invalid product type")
     private String productType;
 
-    @NotNull
+    @NotNull(message = "supply code must not be null")
     @Pattern(
         regexp = "VN|TH|MY|ID|SG|PH|LA|MM|TL",
-        message = "Invalid supplier code"
+        message = "invalid supplier code"
     )
-    @JsonProperty("supplier_cd")
     private String supplierCd;
 
-    @NotNull
+    @NotNull(message = "receive date must not be null")
     @FutureOrPresent
-    @JsonProperty("receive_date")
     private LocalDateTime receiveDate;
 
-    @NotNull
+    @NotNull(message = "order status must not be null")
     @Min(0)
     @Max(2)
-    @JsonProperty("order_status")
     private long orderStatus;
 
     @Min(value = 1)
-    @JsonProperty("quantity")
     private long quantity;
 
-    @NotNull(message = "Attachments must not be null")
+    @NotNull(message = "attachments must not be null")
     @Size(min = 1, max = 5, message = "Number of attachments must be between 1 and 5")
     private List<MultipartFile> attachments;
 }
