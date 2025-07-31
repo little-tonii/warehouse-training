@@ -1,7 +1,9 @@
 package com.training.warehouse.controller;
 
 import com.training.warehouse.dto.request.CreateOutboundRequest;
+import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
+import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.service.OutboundService;
@@ -9,10 +11,10 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 
-import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -353,8 +356,84 @@ public class OutboundController {
         }
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable @Min(value = 1, message = "outboundId must be greater than 0") long id) {
+    public ResponseEntity<?> delete(@PathVariable @Min(value = 1, message = "outbound id must be greater than 0") long id) {
         this.outboundService.deleteOutboundById(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "PUT",
+        summary = "update outbound by id",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(
+                name = "bearerAuth"
+            ),
+        },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "request",
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "application/json",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = UpdateOutboundByIdRequest.class)
+            )
+        ),
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "success",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = UpdateOutboundByIdResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "not found",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+        }
+    )
+    @PutMapping("/{id}")
+    public ResponseEntity<UpdateOutboundByIdResponse> updateById(
+        @PathVariable @Min(value = 1, message = "outboundId must be greater than 0") long id,
+        @RequestBody @Valid UpdateOutboundByIdRequest request) {
+        return ResponseEntity.status(HttpStatus.OK).body(this.outboundService.updateOutboundById(id, request));
     }
 }

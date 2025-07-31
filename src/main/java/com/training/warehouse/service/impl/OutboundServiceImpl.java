@@ -19,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.training.warehouse.dto.request.CreateOutboundRequest;
+import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
+import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.entity.OutboundAttachmentEntity;
@@ -28,7 +30,6 @@ import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.ShippingMethod;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.NotFoundException;
-import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundAttachmentRepository;
@@ -58,15 +59,15 @@ public class OutboundServiceImpl implements OutboundService {
     public byte[] confirmOutboundById(long outboundId) {
         Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
         if (outboundResult.isEmpty()) {
-            throw new NotFoundException(ExceptionMessage.OUTBOUND_NOT_FOUND);
+            throw new NotFoundException("outbound not found");
         }
         OutboundEntity outbound = outboundResult.get();
         if (outbound.isConfirmed()) {
-            throw new BadRequestException(ExceptionMessage.OUTBOUND_CONFIRMED);
+            throw new BadRequestException("outbound was confirmed");
         }
         Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
         if (inboundResult.isEmpty()) {
-            throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
+            throw new NotFoundException("inbound not found");
         }
         List<InboundAttachmentEntity> inboundAttachments = this.inboundAttachmentRepository
                 .findByInboundId(outbound.getInboundId());
@@ -190,28 +191,29 @@ public class OutboundServiceImpl implements OutboundService {
     }
 
     @Override
-    @Transactional
-    public void alertDelayedOutbounds() {
-        List<RiskDelayedOutboundsProjection> delayedOutbounds = outboundRepository.findAllRiskDelayedOutbounds();
-        Map<String, List<RiskDelayedOutboundsProjection>> groupedByUser = delayedOutbounds.stream()
-                .collect(Collectors.groupingBy(RiskDelayedOutboundsProjection::getUserEmail));
-
-        for (Map.Entry<String, List<RiskDelayedOutboundsProjection>> entry : groupedByUser.entrySet()) {
-            String userEmail = entry.getKey();
-            List<RiskDelayedOutboundsProjection> userOutbounds = entry.getValue();
-
-            StringBuilder contentBuilder = new StringBuilder();
-            contentBuilder.append("Bạn có các đơn outbound có nguy cơ trễ:\n\n");
-
-            for (RiskDelayedOutboundsProjection outbound : userOutbounds) {
-                String invoice = inboundRepository.findById(outbound.getInboundID()).orElseThrow().getInvoice();
-                contentBuilder.append("Dự kiến xuất: ").append(outbound.getExpectedShippingDate())
-                        .append(" từ inbound có invoice: ").append(invoice).append("\n");
-            }
-
-            String content = contentBuilder.toString();
-            mailService.sendMail(userEmail, "Risk Delayed Outbound", content);
-            System.out.println("Gửi mail tới user: " + userEmail);
+    public UpdateOutboundByIdResponse updateOutboundById(long outboundId, UpdateOutboundByIdRequest request) {
+        Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
+        if (outboundResult.isEmpty()) {
+            throw new NotFoundException("outbound not found");
         }
+        OutboundEntity outbound = outboundResult.get();
+        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
+        if (inboundResult.isEmpty()) {
+            throw new NotFoundException("inbound not found");
+        }
+        InboundEntity inbound = inboundResult.get();
+        List<OutboundEntity> outbounds = this.outboundRepository.findByInboundId(inbound.getId());
+        long totalOutboundQuantity = outbounds.stream().mapToLong((e) -> e.getQuantity()).sum();
+        if (totalOutboundQuantity - outbound.getQuantity() + request.getQuantity() > inbound.getQuantity()) {
+            throw new BadRequestException("not enough quantity");
+        }
+        outbound.setQuantity(request.getQuantity());
+        outbound.setExpectedShippingDate(request.getExpectedShippingDate());
+        outbound.setShippingMethod(ShippingMethod.fromCode(request.getShippingMethod()));
+        OutboundEntity updatedOutbound = this.outboundRepository.save(outbound);
+        return UpdateOutboundByIdResponse.builder()
+                .id(updatedOutbound.getId())
+                .build();
     }
+
 }
