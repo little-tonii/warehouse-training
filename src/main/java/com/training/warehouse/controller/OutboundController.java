@@ -14,7 +14,6 @@ import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 
-import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
