@@ -24,15 +24,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
-import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
 import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
-
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 @Controller
 @RequestMapping("/api/inbound")
