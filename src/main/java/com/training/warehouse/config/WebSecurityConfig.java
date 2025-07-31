@@ -54,6 +54,10 @@ public class WebSecurityConfig {
                                                 HttpMethod.POST,
                                                 "/api/inbound")
                                 .authenticated()
+                                .requestMatchers(
+                                                HttpMethod.GET,
+                                                "/api/inbound/inventory")
+                                .authenticated()
                                 // outbound
                                 .requestMatchers(
                                                 HttpMethod.GET,
