@@ -50,6 +50,9 @@ public class WebSecurityConfig {
                         HttpMethod.DELETE,
                         "/api/inbound/*")
                 .authenticated()
+                .requestMatchers(HttpMethod.POST,
+                        "/api/inbound/*")
+                .authenticated()
                 // outbound
                 .requestMatchers(
                         HttpMethod.GET,
@@ -64,11 +67,6 @@ public class WebSecurityConfig {
                         HttpMethod.DELETE,
                         "/api/outbound/*")
                 .authenticated()
-                .requestMatchers("/api/inbound/*").authenticated()
-
-                //
-                .requestMatchers(HttpMethod.POST,
-                        "/api/inbound/*").authenticated()
                 // others
                 .anyRequest().authenticated());
         http.exceptionHandling(ex -> ex
