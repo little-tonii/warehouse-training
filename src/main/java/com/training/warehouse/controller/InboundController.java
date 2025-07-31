@@ -31,7 +31,6 @@ import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 @AllArgsConstructor
 @io.swagger.v3.oas.annotations.tags.Tag(name = "inbound")
 @Validated
-@SecurityRequirement(name = "bearerAuth")
 public class InboundController {
     private final InboundService inboundService;
 
