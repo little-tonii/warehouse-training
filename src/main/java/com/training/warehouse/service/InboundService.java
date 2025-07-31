@@ -6,6 +6,6 @@ import com.training.warehouse.entity.UserEntity;
 
 public interface InboundService {
     void deleteInboundById(long inboundId);
-    InboundResponse updateInbound(Long id, InboundUpdateRequest request);
+    InboundResponse updateInboundById(Long id, InboundUpdateRequest request);
     CreateInboundResponse createInbound(UserEntity user, CreateInboundRequest request);
 }

@@ -1,6 +1,5 @@
 package com.training.warehouse.service.impl;
 
-import com.training.warehouse.dto.request.InboundUpdateRequest;
 import com.training.warehouse.dto.response.FileUploadResult;
 import com.training.warehouse.dto.response.InboundResponse;
 
@@ -30,11 +29,8 @@ import lombok.AllArgsConstructor;
 import com.training.warehouse.dto.request.CreateInboundRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
 import com.training.warehouse.entity.UserEntity;
-import com.training.warehouse.enumeric.OrderStatus;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.enumeric.SupplierCd;
-
-import java.util.*;
 
 @Service
 @AllArgsConstructor
@@ -99,6 +95,7 @@ public class InboundServiceImpl implements InboundService {
         }
         return CreateInboundResponse.builder().id(newInbound.getId()).build();
     }
+    
     @Override
     public InboundResponse updateInbound(Long id, InboundUpdateRequest dto) {
         InboundEntity entity = inboundRepository.findById(id)
@@ -166,11 +163,6 @@ public class InboundServiceImpl implements InboundService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return mapToResponse(inboundRepository.save(entity), results);
-    }
-
-    private InboundResponse mapToResponse(InboundEntity e, List<FileUploadResult> results) {
-
         return InboundResponse.builder()
                 .id(e.getId())
                 .invoice(e.getInvoice())
@@ -185,7 +177,5 @@ public class InboundServiceImpl implements InboundService {
                 .build();
     }
 
-    public static <T> void setIfNotNull(T value, Consumer<T> setter) {
-        if (value != null) setter.accept(value);
-    }
+   
 }
