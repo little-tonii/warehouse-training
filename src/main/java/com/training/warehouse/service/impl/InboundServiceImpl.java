@@ -13,14 +13,19 @@ import com.training.warehouse.exception.NotFoundException;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundRepository;
+import com.training.warehouse.repository.projection.InventoryProjection;
 import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.InboundService;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
 import lombok.AllArgsConstructor;
 import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.request.GetInventoryRequest;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
+import com.training.warehouse.dto.response.GetInventoryResponse;
 import com.training.warehouse.dto.response.UpdateInboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.ProductType;
@@ -131,6 +136,33 @@ public class InboundServiceImpl implements InboundService {
         InboundEntity updatedInbound = this.inboundRepository.save(inbound);
         return UpdateInboundByIdResponse.builder()
             .id(updatedInbound.getId())
+            .build();
+    }
+
+    @Override
+    public GetInventoryResponse getInventory(GetInventoryRequest query) {
+        List<InventoryProjection> inventories = this.inboundRepository.findInventoryNative(
+            query.getLimit(), 
+            query.getLimit() * (query.getPage() - 1)
+        );
+        long total = this.inboundRepository.countInventoryNative();
+        return GetInventoryResponse.builder()
+            .page(query.getPage())
+            .limit(query.getLimit())
+            .total(total)
+            .inventories(inventories.stream().map((e) -> {
+                return GetInventoryResponse.InventoryProjectionRepsonse.builder()
+                    .id(e.getId())
+                    .createdAt(e.getCreatedAt())
+                    .updatedAt(e.getUpdatedAt())
+                    .invoice(e.getInvoice())
+                    .productType(e.getProductType())
+                    .SupplierCd(e.getSupplierCd())
+                    .receiveDate(e.getReceiveDate())
+                    .quantity(e.getQuantity())
+                    .inventory(e.getInventory())
+                    .build();
+            }).collect(Collectors.toList()))
             .build();
     }
 }

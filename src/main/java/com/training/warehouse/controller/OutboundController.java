@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 
@@ -369,7 +370,7 @@ public class OutboundController {
             ),
         },
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "request", 
+            description = "request",
             required = true,
             content = @io.swagger.v3.oas.annotations.media.Content(
                 mediaType = "application/json",
