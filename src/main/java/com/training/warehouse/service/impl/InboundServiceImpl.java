@@ -17,9 +17,6 @@ import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.InboundService;
 
 import java.util.*;
-import java.util.function.Consumer;
-
-
 import lombok.AllArgsConstructor;
 import com.training.warehouse.dto.request.CreateInboundRequest;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
@@ -93,87 +90,47 @@ public class InboundServiceImpl implements InboundService {
         }
         return CreateInboundResponse.builder().id(newInbound.getId()).build();
     }
-    
+
     @Override
-    public UpdateInboundByIdRequest updateInboundById(long id, UpdateInboundByIdResponse request) {
-        InboundEntity entity = inboundRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Inbound not found"));
-        dto.validate();
-        if (entity.getStatus() != OrderStatus.NOT_EXPORTED) {
-//            if (dto.getStatus() == OrderStatus.PARTIALLY_EXPORTED || dto.getStatus() == OrderStatus.FULLY_EXPORTED) {
-//                entity.setStatus(dto.getStatus());
-//                return mapToResponse(inboundRepository.save(entity));
-//
-//            }
-            throw new InvalidInboundStatusException("Cannot update. Inbound status is not editable.");
+    @Transactional(rollbackFor = Exception.class)
+    public UpdateInboundByIdResponse updateInboundById(long id, UpdateInboundByIdRequest request) {
+        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(id);
+        if (inboundResult.isEmpty()) {
+            throw new NotFoundException("inbound not found");
         }
-
-        setIfNotNull(dto.getInvoice(), entity::setInvoice);
-        setIfNotNull(dto.getProductType(), entity::setProductType);
-        setIfNotNull(dto.getSupplierCd(), entity::setSupplierCd);
-        setIfNotNull(dto.getReceiveDate(), entity::setReceiveDate);
-        setIfNotNull(dto.getQuantity(), entity::setQuantity);
-        setIfNotNull(dto.getStatus(), entity::setStatus);
-
-        List<FileUploadResult> results = new ArrayList<>();
-        try {
-            inboundRepository.save(entity);
-
-            List<InboundAttachmentEntity> inboundAttachments = entity.getAttachments();
-            if (inboundAttachments != null && !inboundAttachments.isEmpty()) {
-                int i = 0;
-                for (InboundAttachmentEntity inboundAttachment : inboundAttachments) {
-                    FileUploadResult result = new FileUploadResult();
-                    if (dto.getAttachments().get(i) != null && !dto.getAttachments().get(i).isEmpty()) {
-                        Long inbId = inboundAttachment.getInboundId();
-                        String filePath = inboundAttachment.getFilePath();
-                        String fileName = inboundAttachment.getFileName();
-
-                        String newFileName = dto.getAttachments().get(i).getOriginalFilename();
-                        result.setFileName(newFileName);
-                        try {
-                            try { // k tồn tại file
-                                fileStoreService.deleteFile(FileStoreService.INBOUND_BUCKET, filePath, fileName);
-                            } catch (Exception e) {
-                                // k tồn tại file thì lỗi, bỏ qua lỗi
-                            }
-
-                            String fileKey = UUID.randomUUID().toString() + "_" + newFileName;
-                            String newFilePath = inbId + "/" + fileKey;
-                            try {
-                                fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, newFilePath, dto.getAttachments().get(i));
-                                inboundAttachment.setFileName(newFileName);
-                                inboundAttachment.setFilePath(newFilePath);
-                                inboundAttachmentRepository.save(inboundAttachment);
-                            } catch (Exception e) {
-                                result.setUploaded(false);
-                            }
-                        } catch (Exception e) {
-                            result.setUploaded(false);
-                            result.setSavedToDB(false);
-                            result.setErrorMessage("Cannot save file " + newFileName);
-                        }
-                    }
-                    i++;
-                    results.add(result);
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        InboundEntity inbound = inboundResult.get();
+        Optional<OutboundEntity> outboundResult = this.outboundRepository.findFirstByInboundId(inbound.getId());
+        if (outboundResult.isPresent()) {
+            throw new BadRequestException("inbound is not editable");
         }
-        return InboundResponse.builder()
-                .id(e.getId())
-                .invoice(e.getInvoice())
-                .productType(e.getProductType())
-                .supplierCd(e.getSupplierCd())
-                .receiveDate(e.getReceiveDate())
-                .quantity(e.getQuantity())
-                .status(e.getStatus())
-                .createdAt(e.getCreatedAt())
-                .updatedAt(e.getUpdatedAt())
-                .results(results)
-                .build();
+        List<InboundAttachmentEntity> inboundAttachments = this.inboundAttachmentRepository.findByInboundId(inbound.getId());
+        if (inboundAttachments.size() + request.getAttachments().size() > 5) {
+            throw new BadRequestException("too many attachments");
+        }
+        List<String> filePaths = new ArrayList<>();
+        request.getAttachments().stream().forEach((e) -> {
+            String path = UUID.randomUUID().toString();
+            filePaths.add(path);
+            this.fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, path, e);
+        });
+        for (int i = 0; i < request.getAttachments().size(); i++) {
+            this.inboundAttachmentRepository.save(
+                InboundAttachmentEntity.builder()
+                    .fileName(request.getAttachments().get(i).getOriginalFilename())
+                    .filePath(filePaths.get(i))
+                    .inboundId(inbound.getId())
+                    .build()
+            );
+        }
+        inbound.setInvoice(request.getInvoice());
+        inbound.setProductType(ProductType.fromString(request.getProductType()));
+        inbound.setSupplierCd(SupplierCd.fromCode(request.getSupplierCd()));
+        inbound.setReceiveDate(request.getReceiveDate());
+        inbound.setStatus(OrderStatus.fromValue(request.getOrderStatus()));
+        inbound.setQuantity(request.getQuantity());
+        InboundEntity updatedInbound = this.inboundRepository.save(inbound);
+        return UpdateInboundByIdResponse.builder()
+            .id(updatedInbound.getId())
+            .build();
     }
-
-   
 }

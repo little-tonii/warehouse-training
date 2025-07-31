@@ -42,6 +42,7 @@ public class CreateInboundRequest {
     private long orderStatus;
 
     @Min(value = 1)
+    @NotNull(message = "quantity must not be null")
     private long quantity;
 
     @NotNull(message = "attachments must not be null")
