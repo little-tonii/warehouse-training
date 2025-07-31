@@ -1,9 +1,5 @@
 package com.training.warehouse.service.impl;
 
-import com.training.warehouse.dto.response.FileUploadResult;
-import com.training.warehouse.dto.response.InboundResponse;
-
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,7 +7,6 @@ import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.enumeric.OrderStatus;
 
-import com.training.warehouse.exception.InvalidInboundStatusException;
 import com.training.warehouse.entity.OutboundEntity;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.NotFoundException;
@@ -27,7 +22,9 @@ import java.util.function.Consumer;
 
 import lombok.AllArgsConstructor;
 import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
+import com.training.warehouse.dto.response.UpdateInboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.enumeric.SupplierCd;
@@ -97,7 +94,7 @@ public class InboundServiceImpl implements InboundService {
     }
     
     @Override
-    public InboundResponse updateInbound(Long id, InboundUpdateRequest dto) {
+    public UpdateInboundByIdRequest updateInboundById(long id, UpdateInboundByIdResponse request) {
         InboundEntity entity = inboundRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Inbound not found"));
         dto.validate();

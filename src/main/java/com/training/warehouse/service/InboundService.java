@@ -1,11 +1,13 @@
 package com.training.warehouse.service;
 
 import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
+import com.training.warehouse.dto.response.UpdateInboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
 
 public interface InboundService {
     void deleteInboundById(long inboundId);
-    InboundResponse updateInboundById(Long id, InboundUpdateRequest request);
+    UpdateInboundByIdRequest updateInboundById(long id, UpdateInboundByIdResponse request);
     CreateInboundResponse createInbound(UserEntity user, CreateInboundRequest request);
 }
