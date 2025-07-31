@@ -72,7 +72,7 @@ public class WebSecurityConfig {
                                                 "/api/outbound/*")
                                 .authenticated()
                                 // others
-                                .anyRequest().authenticated());
+                                .anyRequest().denyAll());
                 http.exceptionHandling(ex -> ex
                                 .authenticationEntryPoint(authenticationEntryPoint)
                                 .accessDeniedHandler(accessDeniedHandler));
