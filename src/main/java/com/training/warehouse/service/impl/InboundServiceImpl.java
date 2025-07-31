@@ -1,8 +1,5 @@
 package com.training.warehouse.service.impl;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +15,14 @@ import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.InboundService;
 
 import lombok.AllArgsConstructor;
+import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.response.CreateInboundResponse;
+import com.training.warehouse.entity.UserEntity;
+import com.training.warehouse.enumeric.OrderStatus;
+import com.training.warehouse.enumeric.ProductType;
+import com.training.warehouse.enumeric.SupplierCd;
+
+import java.util.*;
 
 @Service
 @AllArgsConstructor
@@ -52,4 +57,34 @@ public class InboundServiceImpl implements InboundService {
         return;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CreateInboundResponse createInbound(UserEntity user, CreateInboundRequest request) {
+        List<String> filePaths = new ArrayList<>();
+        request.getAttachments().stream().forEach((e) -> {
+            String path = UUID.randomUUID().toString();
+            filePaths.add(path);
+            this.fileStoreService.uploadFile(FileStoreService.INBOUND_BUCKET, path, e);
+        });
+        InboundEntity newInbound = this.inboundRepository.save(
+            InboundEntity.builder()
+                .invoice(request.getInvoice())
+                .productType(ProductType.fromString(request.getProductType()))
+                .supplierCd(SupplierCd.fromCode(request.getSupplierCd()))
+                .receiveDate(request.getReceiveDate())
+                .status(OrderStatus.fromValue(request.getOrderStatus()))
+                .quantity(request.getQuantity())
+                .user(user)
+                .build()
+        );
+        for (int i = 0; i < request.getAttachments().size(); i++) {
+            this.inboundAttachmentRepository.save(
+                InboundAttachmentEntity.builder()
+                    .fileName(request.getAttachments().get(i).getOriginalFilename())
+                    .filePath(filePaths.get(i))
+                    .build()
+            );
+        }
+        return CreateInboundResponse.builder().id(newInbound.getId()).build();
+    }
 }
