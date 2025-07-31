@@ -232,7 +232,7 @@ public class InboundController {
     )
     @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UpdateInboundByIdResponse> updateById(
-        @PathVariable @Min(value = 1, message = "outboundId must be greater than 0") long id,
+        @PathVariable @Min(value = 1, message = "inbound id must be greater than 0") long id,
         @ModelAttribute @Valid UpdateInboundByIdRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.updateInboundById(id, request));    
     }

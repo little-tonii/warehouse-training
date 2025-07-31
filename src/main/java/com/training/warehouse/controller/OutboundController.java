@@ -355,7 +355,7 @@ public class OutboundController {
         }
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable @Min(value = 1, message = "outboundId must be greater than 0") long id) {
+    public ResponseEntity<?> delete(@PathVariable @Min(value = 1, message = "outbound id must be greater than 0") long id) {
         this.outboundService.deleteOutboundById(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
