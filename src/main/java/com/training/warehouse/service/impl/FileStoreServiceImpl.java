@@ -31,7 +31,7 @@ public class FileStoreServiceImpl implements FileStoreService {
     public FileStoreServiceImpl(EnvProvider envProvider) {
         this.envProvider = envProvider;
         this.minioClient = MinioClient.builder()
-                .endpoint("https://" + this.envProvider.getMinioDomain())
+                .endpoint("http://" + this.envProvider.getMinioDomain())
                 .credentials(this.envProvider.getMinioUsername(), this.envProvider.getMinioPassword())
                 .build();
     }
