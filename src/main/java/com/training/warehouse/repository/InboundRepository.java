@@ -7,5 +7,5 @@ import com.training.warehouse.entity.InboundEntity;
 
 @Repository
 public interface InboundRepository extends JpaRepository<InboundEntity, Long>{
-    
+
 }

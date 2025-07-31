@@ -2,6 +2,7 @@ package com.training.warehouse.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import com.training.warehouse.dto.response.StockProductType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,6 +22,8 @@ public interface OutboundRepository extends JpaRepository<OutboundEntity, Long> 
                   AND outbound.createdAt BETWEEN :from AND :to
             """)
     List<OutboundEntity> findLateOutboundsCreatedBetween(LocalDateTime from, LocalDateTime to);
+
+    Optional<OutboundEntity> findFirstByInboundId(long inboundId);
 
     @Query(value = """
             SELECT

@@ -23,11 +23,11 @@ public class CreateOutboundRequest {
     private long quantity;
 
     @JsonProperty("shipping_method")
-    @Pattern(regexp = "[ASTR]", message = "Shipping method must be one of A, S, T, R")
+    @Pattern(regexp = "[ASTR]", message = "shipping method must be one of A, S, T, R")
     private String shippingMethod;
 
     @JsonProperty("expected_shipping_date")
-    @NotNull()
+    @NotNull(message = "expected shipping date must not be null")
     @FutureOrPresent()
     private LocalDateTime exceptedShippingDate;
 }
