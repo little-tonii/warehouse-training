@@ -15,12 +15,21 @@ public interface OutboundRepository extends JpaRepository<OutboundEntity, Long> 
     List<OutboundEntity> findByInboundId(long inboundId);
 
     @Query("""
-                SELECT outbound
-                FROM OutboundEntity outbound
-                WHERE (outbound.actualShippingDate IS NULL OR outbound.actualShippingDate > outbound.expectedShippingDate)
-                  AND outbound.createdAt BETWEEN :from AND :to
-            """)
+      SELECT outbound
+      FROM OutboundEntity outbound
+      WHERE (outbound.actualShippingDate IS NULL OR outbound.actualShippingDate > outbound.expectedShippingDate)
+        AND outbound.createdAt BETWEEN :from AND :to
+    """)
     List<OutboundEntity> findLateOutboundsCreatedBetween(LocalDateTime from, LocalDateTime to);
 
     Optional<OutboundEntity> findFirstByInboundId(long inboundId);
+
+    @Query(value="""
+      SELECT *
+      FROM outbounds
+      WHERE is_confirmed = false AND expected_shipping_date BETWEEN :from AND :to
+      ORDER BY expected_shipping_date ASC
+      LIMIT :limit OFFSET :offset    
+    """, nativeQuery = true)
+    List<OutboundEntity> findUnconfirmedOutboundsInLastSevenDays(LocalDateTime from, LocalDateTime to, long limit, long offset);
 }
