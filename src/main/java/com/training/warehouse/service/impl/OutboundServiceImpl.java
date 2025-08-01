@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.training.warehouse.dto.request.CreateOutboundRequest;
 import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
+import com.training.warehouse.dto.response.ConfirmOutboundByIdResponse;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
 import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 import com.training.warehouse.entity.InboundAttachmentEntity;
@@ -50,7 +51,7 @@ public class OutboundServiceImpl implements OutboundService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public byte[] confirmOutboundById(long outboundId) {
+    public ConfirmOutboundByIdResponse confirmOutboundById(long outboundId) {
         Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
         if (outboundResult.isEmpty()) {
             throw new NotFoundException("outbound not found");
@@ -85,7 +86,14 @@ public class OutboundServiceImpl implements OutboundService {
         outbound.setActualShippingDate(LocalDateTime.now());
         this.outboundRepository.save(outbound);
         this.fileStoreService.uploadFile(FileStoreService.OUTBOUND_BUCKET, filePath, fileName, mergedFile);
-        return mergedFile;
+        String url = this.fileStoreService.getPresignedDownloadUrl(
+            FileStoreService.OUTBOUND_BUCKET,
+            filePath, 
+            fileName
+        );
+        return ConfirmOutboundByIdResponse.builder()
+            .url(url)
+            .build();
     }
 
     @Override
