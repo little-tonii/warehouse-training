@@ -9,11 +9,8 @@ import org.springframework.stereotype.Repository;
 import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.repository.projection.InventoryProjection;
 
-import java.util.Optional;
-
 @Repository
 public interface InboundRepository extends JpaRepository<InboundEntity, Long>{
-    Optional<InboundEntity> findByInvoice(String invoice);
     @Query(value = """
         SELECT 
         inbounds.id as id, 

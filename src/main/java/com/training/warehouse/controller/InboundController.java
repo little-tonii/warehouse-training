@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 
-
 @Controller
 @RequestMapping("/api/inbound")
 @AllArgsConstructor

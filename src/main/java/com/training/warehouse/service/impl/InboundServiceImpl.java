@@ -3,9 +3,6 @@ package com.training.warehouse.service.impl;
 import java.util.List;
 import java.util.Optional;
 
-import jakarta.validation.Validator;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,24 +34,6 @@ import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.ProductType;
 import com.training.warehouse.enumeric.SupplierCd;
 
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvException;
-import com.training.warehouse.dto.request.InboundImportFileRequest;
-
-import jakarta.validation.ConstraintViolation;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.stream.Collectors;
-
-
 @Service
 @AllArgsConstructor
 public class InboundServiceImpl implements InboundService {
@@ -63,9 +42,6 @@ public class InboundServiceImpl implements InboundService {
     private final InboundRepository inboundRepository;
     private final OutboundRepository outboundRepository;
     private final InboundAttachmentRepository inboundAttachmentRepository;
-
-    @Autowired
-    private final Validator validator;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -193,102 +169,102 @@ public class InboundServiceImpl implements InboundService {
             .build();
     }
 
-    @Override
-    public Map<String, Object> importFromCsv(MultipartFile file) {
-        List<InboundEntity> validEntities = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
-        UserEntity currUser = (UserEntity) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
-        try (Reader reader = new InputStreamReader(file.getInputStream());
-             CSVReader csvReader = new CSVReader(reader)) {
-            List<String[]> allRows = csvReader.readAll();
+    // @Override
+    // public Map<String, Object> importFromCsv(MultipartFile file) {
+    //     List<InboundEntity> validEntities = new ArrayList<>();
+    //     List<String> errors = new ArrayList<>();
+    //     UserEntity currUser = (UserEntity) SecurityContextHolder
+    //             .getContext()
+    //             .getAuthentication()
+    //             .getPrincipal();
+    //     try (Reader reader = new InputStreamReader(file.getInputStream());
+    //          CSVReader csvReader = new CSVReader(reader)) {
+    //         List<String[]> allRows = csvReader.readAll();
 
-            if (allRows.isEmpty()) throw new IllegalArgumentException("File is empty");
+    //         if (allRows.isEmpty()) throw new IllegalArgumentException("File is empty");
 
-            String[] headers = allRows.get(0);
-            Map<String, Integer> headerMap = new HashMap<>();
-            for (int i = 0; i < headers.length; i++) {
-                String header = headers[i].trim().toLowerCase().replaceAll("\\s+", "");
-                headerMap.put(header, i);
-            }
+    //         String[] headers = allRows.get(0);
+    //         Map<String, Integer> headerMap = new HashMap<>();
+    //         for (int i = 0; i < headers.length; i++) {
+    //             String header = headers[i].trim().toLowerCase().replaceAll("\\s+", "");
+    //             headerMap.put(header, i);
+    //         }
 
-            List<String> required = List.of("suppliercountry", "invoice", "producttype", "quantity", "receivedate");
-            for (String field : required) {
-                if (!headerMap.containsKey(field)) {
-                    throw new IllegalArgumentException("Missing Column" + field);
-                }
-            }
+    //         List<String> required = List.of("suppliercountry", "invoice", "producttype", "quantity", "receivedate");
+    //         for (String field : required) {
+    //             if (!headerMap.containsKey(field)) {
+    //                 throw new IllegalArgumentException("Missing Column" + field);
+    //             }
+    //         }
 
-            for (int i = 1; i < allRows.size(); i++) {
-                String[] row = allRows.get(i);
+    //         for (int i = 1; i < allRows.size(); i++) {
+    //             String[] row = allRows.get(i);
 
-                try {
-                    InboundImportFileRequest dto = new InboundImportFileRequest();
+    //             try {
+    //                 InboundImportFileRequest dto = new InboundImportFileRequest();
 
-                    dto.setInvoice(row[headerMap.get("invoice")]);
-                    dto.setSupplierCd(row[headerMap.get("suppliercountry")]);
-                    dto.setProductType(row[headerMap.get("producttype")]);
-                    dto.setQuantity(Long.parseLong(row[headerMap.get("quantity")]));
+    //                 dto.setInvoice(row[headerMap.get("invoice")]);
+    //                 dto.setSupplierCd(row[headerMap.get("suppliercountry")]);
+    //                 dto.setProductType(row[headerMap.get("producttype")]);
+    //                 dto.setQuantity(Long.parseLong(row[headerMap.get("quantity")]));
 
-                    String dateStr = row[headerMap.get("receivedate")];
-                    if (dateStr != null && !dateStr.isBlank()) {
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
-                        LocalDateTime receiveDate = LocalDate.parse(dateStr, formatter).atStartOfDay();
-                        dto.setReceiveDate(receiveDate);
-                    }
+    //                 String dateStr = row[headerMap.get("receivedate")];
+    //                 if (dateStr != null && !dateStr.isBlank()) {
+    //                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
+    //                     LocalDateTime receiveDate = LocalDate.parse(dateStr, formatter).atStartOfDay();
+    //                     dto.setReceiveDate(receiveDate);
+    //                 }
 
-                    dto.setStatus(OrderStatus.NOT_EXPORTED);
+    //                 dto.setStatus(OrderStatus.NOT_EXPORTED);
 
-                    Set<ConstraintViolation<InboundImportFileRequest>> violations = validator.validate(dto);
+    //                 Set<ConstraintViolation<InboundImportFileRequest>> violations = validator.validate(dto);
 
-                    if (!violations.isEmpty()) {
-                        String message = violations.stream()
-                                .map(ConstraintViolation::getMessage)
-                                .collect(Collectors.joining("; "));
-                        throw new IllegalArgumentException(message);
-                    }
+    //                 if (!violations.isEmpty()) {
+    //                     String message = violations.stream()
+    //                             .map(ConstraintViolation::getMessage)
+    //                             .collect(Collectors.joining("; "));
+    //                     throw new IllegalArgumentException(message);
+    //                 }
 
-                    if (inboundRepository.findByInvoice(dto.getInvoice()).isPresent()) {
-                        throw new BadRequestException("Invoice đã tồn tại");
-                    }
+    //                 if (inboundRepository.findByInvoice(dto.getInvoice()).isPresent()) {
+    //                     throw new BadRequestException("Invoice đã tồn tại");
+    //                 }
 
-                    InboundEntity entity = InboundEntity.builder()
-                            .invoice(dto.getInvoice())
-                            .status(dto.getStatus())
-                            .supplierCd(SupplierCd.fromCode(dto.getSupplierCd()))
-                            .quantity(dto.getQuantity())
-                            .productType(ProductType.fromString(dto.getProductType()))
-                            .receiveDate(dto.getReceiveDate())
-                            .user(currUser)
-                            .build();
+    //                 InboundEntity entity = InboundEntity.builder()
+    //                         .invoice(dto.getInvoice())
+    //                         .status(dto.getStatus())
+    //                         .supplierCd(SupplierCd.fromCode(dto.getSupplierCd()))
+    //                         .quantity(dto.getQuantity())
+    //                         .productType(ProductType.fromString(dto.getProductType()))
+    //                         .receiveDate(dto.getReceiveDate())
+    //                         .user(currUser)
+    //                         .build();
 
-                    validEntities.add(entity);
-                } catch (Exception e) {
-                    errors.add("Lỗi dòng " + (i + 1) + ": " + e.getMessage());
-                }
-            }
+    //                 validEntities.add(entity);
+    //             } catch (Exception e) {
+    //                 errors.add("Lỗi dòng " + (i + 1) + ": " + e.getMessage());
+    //             }
+    //         }
 
-            try {
-                if (errors.isEmpty()) {
-                    inboundRepository.saveAll(validEntities);
-                }
-            } catch (DataIntegrityViolationException e) {
-                throw new RuntimeException("Lỗi lưu dữ liệu: " + e.getMessage(), e);
-            }
+    //         try {
+    //             if (errors.isEmpty()) {
+    //                 inboundRepository.saveAll(validEntities);
+    //             }
+    //         } catch (DataIntegrityViolationException e) {
+    //             throw new RuntimeException("Lỗi lưu dữ liệu: " + e.getMessage(), e);
+    //         }
 
-            if (!errors.isEmpty()) {
-                errors.add("Import completed with some errors:\n" + String.join("\n", errors));
-            }
-        } catch (IOException | CsvException e) {
-            throw new RuntimeException("Failed to read CSV file", e);
-        }
-        Map<String, Object> result = new HashMap<>();
-        if(errors.isEmpty())
-            result.put("success", validEntities.size() + " hàng được import");
-        else result.put("errorMessages", errors);
+    //         if (!errors.isEmpty()) {
+    //             errors.add("Import completed with some errors:\n" + String.join("\n", errors));
+    //         }
+    //     } catch (IOException | CsvException e) {
+    //         throw new RuntimeException("Failed to read CSV file", e);
+    //     }
+    //     Map<String, Object> result = new HashMap<>();
+    //     if(errors.isEmpty())
+    //         result.put("success", validEntities.size() + " hàng được import");
+    //     else result.put("errorMessages", errors);
 
-        return result;
-    }
+    //     return result;
+    // }
 }
