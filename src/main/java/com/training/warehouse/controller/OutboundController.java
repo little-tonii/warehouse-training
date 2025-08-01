@@ -2,6 +2,7 @@ package com.training.warehouse.controller;
 
 import com.training.warehouse.dto.request.CreateOutboundRequest;
 import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
+import com.training.warehouse.dto.response.ConfirmOutboundByIdResponse;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
 import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
@@ -66,7 +67,13 @@ public class OutboundController {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
-                description = "inbound is confirmed"
+                description = "inbound is confirmed",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ConfirmOutboundByIdResponse.class
+                    )
+                )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
@@ -111,23 +118,13 @@ public class OutboundController {
         }
     )
     @GetMapping("/{id}/confirm")
-    public ResponseEntity<?> confirmById(
+    public ResponseEntity<ConfirmOutboundByIdResponse> confirmById(
         @PathVariable @Min(
             value = 1,
             message = "outboundId must be greater than 0"
         ) long id
     ) {
-        byte[] mergedPdf = outboundService.confirmOutboundById(id);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(
-            ContentDisposition.attachment()
-                .filename("outbound-" + id + "-confirmed.pdf")
-                .build()
-        );
-        return ResponseEntity.status(HttpStatus.OK)
-            .headers(headers)
-            .body(mergedPdf);
+        return ResponseEntity.status(HttpStatus.OK).body(this.outboundService.confirmOutboundById(id));
     }
 
     @io.swagger.v3.oas.annotations.Operation(
