@@ -11,7 +11,7 @@ import com.training.warehouse.repository.projection.InventoryProjection;
 
 @Repository
 public interface InboundRepository extends JpaRepository<InboundEntity, Long>{
-
+    
     @Query(value = """
         SELECT 
         inbounds.id as id, 
