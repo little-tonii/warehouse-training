@@ -28,7 +28,7 @@ public class AlertScheduler {
         long page = 1;
         long limit = 20;
         while (true) {
-            List<OutboundEntity> outbounds = this.outboundRepository.findUnconfirmedOutboundsInLastSevenDays(
+            List<OutboundEntity> outbounds = this.outboundRepository.findUnconfirmedOutboundsInLastSevenDaysNative(
                 from, to, limit, (page - 1) * limit
             );
             outbounds.stream().forEach((e) -> {
@@ -55,7 +55,7 @@ public class AlertScheduler {
         long page = 1;
         long limit = 20;
         while (true) {
-            List<OutboundEntity> outbounds = this.outboundRepository.findLateOutbounds(limit, (page - 1) * limit);
+            List<OutboundEntity> outbounds = this.outboundRepository.findLateOutboundsNative(limit, (page - 1) * limit);
             outbounds.stream().forEach((e) -> {
                 this.mailService.sendAsync(
                     e.getUser().getEmail(), 
