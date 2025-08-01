@@ -29,18 +29,6 @@ import org.springframework.web.bind.annotation.*;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 
-import org.springframework.http.*;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import java.util.Map;
-
 
 @Controller
 @RequestMapping("/api/inbound")
@@ -306,29 +294,5 @@ public class InboundController {
     @GetMapping("/inventory")
     public ResponseEntity<GetInventoryResponse> getInventory(@ParameterObject @Valid GetInventoryRequest query) {
         return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.getInventory(query));
-    }
-
-    @Operation(
-            summary = "Import Inbound Data from CSV file",
-            method = "POST",
-
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Import Result File Response",
-                            content =
-                            @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(type = "object")
-                            )
-
-                    )
-            }
-    )
-    @PostMapping(value = "/import-inbound-data", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> importInboundDataFile(@Parameter(description = "CSV file", content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE))
-                                                   @RequestParam("file") MultipartFile file) {
-        Map<String, Object> result = inboundService.importFromCsv(file);
-        return ResponseEntity.ok(result);
     }
 }
