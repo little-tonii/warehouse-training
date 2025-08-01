@@ -32,4 +32,13 @@ public interface OutboundRepository extends JpaRepository<OutboundEntity, Long> 
       LIMIT :limit OFFSET :offset    
     """, nativeQuery = true)
     List<OutboundEntity> findUnconfirmedOutboundsInLastSevenDays(LocalDateTime from, LocalDateTime to, long limit, long offset);
+
+    @Query(value = """
+      SELECT *
+      FROM outbounds
+      WHERE is_confirmed = false AND expected_shipping_date < NOW()
+      ORDER BY expected_shipping_date ASC
+      LIMIT :limit OFFSET :offset
+    """, nativeQuery = true)
+    List<OutboundEntity> findLateOutbounds(long limit, long offset);
 }

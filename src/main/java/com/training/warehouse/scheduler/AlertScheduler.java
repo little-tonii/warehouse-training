@@ -49,4 +49,29 @@ public class AlertScheduler {
             page++;
         }
     }
+
+    @Scheduled(cron = "0 */2 * * * *")
+    public void alertLateOutbounds() {
+        long page = 1;
+        long limit = 20;
+        while (true) {
+            List<OutboundEntity> outbounds = this.outboundRepository.findLateOutbounds(limit, (page - 1) * limit);
+            outbounds.stream().forEach((e) -> {
+                this.mailService.sendAsync(
+                    e.getUser().getEmail(), 
+                    "Alert outbound ", 
+                    "Outbound %d is not exported, due date on %d/%d/%d".formatted(
+                        e.getId(), 
+                        e.getExpectedShippingDate().getDayOfMonth(),
+                        e.getExpectedShippingDate().getMonth(),
+                        e.getExpectedShippingDate().getYear()
+                    )
+                );
+            });
+            if (outbounds.size() < limit) {
+                break;
+            }
+            page++;
+        }
+    }
 }
