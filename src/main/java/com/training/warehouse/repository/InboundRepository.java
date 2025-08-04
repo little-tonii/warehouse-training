@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.training.warehouse.entity.InboundEntity;
+import com.training.warehouse.repository.projection.InboundProjection;
 import com.training.warehouse.repository.projection.InventoryProjection;
 
 @Repository
@@ -45,4 +46,27 @@ public interface InboundRepository extends JpaRepository<InboundEntity, Long>{
         WHERE COALESCE(inbounds.quantity - outboundsTemp.total_outbound, inbounds.quantity) > 0
     """, nativeQuery = true)
     long countInventoryNative();
+
+    @Query(value = """
+        SELECT 
+            inbounds.id AS id,
+            inbounds.created_at AS createdAt,
+            inbounds.updated_at AS updatedAt,
+            inbounds.invoice AS invoice,
+            inbounds.product_type AS productType,
+            inbounds.supplier_cd AS supplierCd,
+            inbounds.receive_date AS receiveDate,
+            inbounds.status AS orderStatus,
+            inbounds.quantity AS quantity,
+            users.full_name AS creatorFullName,
+            users.email AS creatorEmail
+        FROM inbounds
+        LEFT JOIN users ON inbounds.user_id = users.id
+        WHERE 1 = 1
+        ORDER BY 
+            CASE WHEN :direction = 'asc' THEN inbounds.created_at END ASC,
+            CASE WHEN :direction = 'desc' THEN inbounds.created_at END DESC
+        LIMIT :limit OFFSET :offset
+    """, nativeQuery = true)
+    List<InboundProjection> findInboundNative(long limit, long offset, String direction);
 }
