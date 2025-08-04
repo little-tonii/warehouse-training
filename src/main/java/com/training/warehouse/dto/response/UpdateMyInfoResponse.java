@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserUpdateInfoResponse {
+public class UpdateMyInfoResponse {
 
     @JsonProperty("id")
     private long id;

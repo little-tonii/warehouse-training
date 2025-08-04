@@ -40,10 +40,13 @@ public class WebSecurityConfig {
                                                 "/api/auth/register",
                                                 "/api/auth/login")
                                 .permitAll()
-                                // user
                                 .requestMatchers(
-                                                HttpMethod.PUT,
-                                                "/api/user")
+                                        HttpMethod.PUT,
+                                        "/api/auth/me")
+                                .authenticated()
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/auth/me")
                                 .authenticated()
                                 // inbound
                                 .requestMatchers(
