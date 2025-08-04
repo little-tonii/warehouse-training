@@ -1,6 +1,7 @@
 package com.training.warehouse.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -69,4 +70,6 @@ public interface InboundRepository extends JpaRepository<InboundEntity, Long>{
         LIMIT :limit OFFSET :offset
     """, nativeQuery = true)
     List<InboundProjection> findInboundNative(long limit, long offset, String direction);
+
+    Optional<InboundEntity> findByInvoice(String invoice);
 }
