@@ -13,6 +13,7 @@ import com.training.warehouse.exception.NotFoundException;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundRepository;
+import com.training.warehouse.repository.projection.InboundProjection;
 import com.training.warehouse.repository.projection.InventoryProjection;
 import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.InboundService;
@@ -195,7 +196,32 @@ public class InboundServiceImpl implements InboundService {
 
     @Override
     public GetInboundsResponse getInbounds(GetInboundsRequest query) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getInbounds'");
+        List<InboundProjection> inbounds = this.inboundRepository.findInboundNative(
+            query.getLimit(), (query.getPage() - 1) * query.getLimit(), query.getDirection()
+        );
+        long total = this.inboundRepository.count();
+        return GetInboundsResponse.builder()
+            .page(query.getPage())
+            .limit(query.getLimit())
+            .total(total)
+            .inbounds(inbounds.stream()
+                .map((e) -> {
+                    return GetInboundByIdResponse.builder()
+                        .id(e.getId())
+                        .invoice(e.getInvoice())
+                        .productType(e.getProductType())
+                        .supplierCd(e.getSupplierCd())
+                        .receiveDate(e.getReceiveDate())
+                        .orderStatus(OrderStatus.fromValue(e.getOrderStatus()).name())
+                        .quantity(e.getQuantity())
+                        .createdAt(e.getCreatedAt())
+                        .updatedAt(e.getUpdatedAt())
+                        .creator(GetInboundByIdResponse.InboundCreatorResponse.builder()
+                            .email(e.getCreatorEmail())
+                            .fullName(e.getCreatorFullName())
+                            .build()
+                        ).build();
+                }).collect(Collectors.toList())
+            ).build();
     }
 }

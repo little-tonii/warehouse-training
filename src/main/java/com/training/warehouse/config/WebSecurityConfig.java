@@ -60,7 +60,8 @@ public class WebSecurityConfig {
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/inbound/inventory",
-                                "/api/inbound/*"
+                                "/api/inbound/*",
+                                "/api/inbound"
                         ).authenticated()
                         // outbound
                         .requestMatchers(
