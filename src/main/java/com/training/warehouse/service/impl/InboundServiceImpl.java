@@ -197,6 +197,7 @@ public class InboundServiceImpl implements InboundService {
             throw new NotFoundException("inbound not found");
         }
         InboundEntity inbound = inboundResult.get();
+        List<InboundAttachmentEntity> attachments = this.inboundAttachmentRepository.findByInboundId(inbound.getId());
         return GetInboundByIdResponse.builder()
             .id(inbound.getId())
             .invoice(inbound.getInvoice())
@@ -210,8 +211,14 @@ public class InboundServiceImpl implements InboundService {
             .creator(GetInboundByIdResponse.InboundCreatorResponse.builder()
                 .email(inbound.getUser().getEmail())
                 .fullName(inbound.getUser().getFullName())
-                .build()
-            ).build();
+                .build())
+            .attachments(attachments.stream().map((e) -> {
+                return GetInboundByIdResponse.InboundAttachmentResponse.builder()
+                    .id(e.getId())
+                    .fileName(e.getFileName())
+                    .build();
+            }).collect(Collectors.toList()))
+            .build();
     }
 
     @Override
@@ -226,6 +233,7 @@ public class InboundServiceImpl implements InboundService {
             .total(total)
             .inbounds(inbounds.stream()
                 .map((e) -> {
+                    List<InboundAttachmentEntity> attachments = this.inboundAttachmentRepository.findByInboundId(e.getId());
                     return GetInboundByIdResponse.builder()
                         .id(e.getId())
                         .invoice(e.getInvoice())
@@ -239,8 +247,14 @@ public class InboundServiceImpl implements InboundService {
                         .creator(GetInboundByIdResponse.InboundCreatorResponse.builder()
                             .email(e.getCreatorEmail())
                             .fullName(e.getCreatorFullName())
-                            .build()
-                        ).build();
+                            .build())
+                        .attachments(attachments.stream().map((attachment) -> {
+                            return GetInboundByIdResponse.InboundAttachmentResponse.builder()
+                                .id(attachment.getId())
+                                .fileName(attachment.getFileName())
+                                .build();
+                        }).collect(Collectors.toList()))
+                        .build();
                 }).collect(Collectors.toList())
             ).build();
     }

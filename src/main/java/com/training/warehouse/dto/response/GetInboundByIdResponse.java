@@ -1,6 +1,7 @@
 package com.training.warehouse.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -26,6 +27,19 @@ public class GetInboundByIdResponse {
 
         @JsonProperty("full_name")
         private String fullName;
+    }
+
+    @Builder
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class InboundAttachmentResponse {
+
+        @JsonProperty("id")
+        private long id;
+        
+        @JsonProperty("file_name")
+        private String fileName;
     }
 
     @JsonProperty("id")
@@ -57,4 +71,6 @@ public class GetInboundByIdResponse {
 
     @JsonProperty("creator")
     private InboundCreatorResponse creator;
+
+    private List<InboundAttachmentResponse> attachments;
 }
