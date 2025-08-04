@@ -38,6 +38,7 @@ import com.training.warehouse.dto.request.GetInventoryRequest;
 import com.training.warehouse.dto.request.ImportInboundDataRequest;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
+import com.training.warehouse.dto.response.GetInboundAttachmentDownloadUrlResponse;
 import com.training.warehouse.dto.response.GetInboundByIdResponse;
 import com.training.warehouse.dto.response.GetInboundsResponse;
 import com.training.warehouse.dto.response.GetInventoryResponse;
@@ -386,5 +387,25 @@ public class InboundServiceImpl implements InboundService {
             throw new RuntimeException(e.getMessage());
         }
         return ImportInboundDataResponse.builder().message("success").build();
+    }
+
+    @Override
+    public GetInboundAttachmentDownloadUrlResponse getInboundAttachmentDownloadUrl(long inboundId, long attachmentId) {
+        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(inboundId);
+        if (inboundResult.isEmpty()) {
+            throw new NotFoundException("inbound not found");
+        }
+        Optional<InboundAttachmentEntity> attachmentResult = this.inboundAttachmentRepository.findById(attachmentId);
+        if (attachmentResult.isEmpty()) {
+            throw new NotFoundException("attachment not found");
+        }
+        InboundAttachmentEntity attachment = attachmentResult.get();
+        if (attachment.getInboundId() != inboundId) {
+            throw new BadRequestException("attachment does not belong to this inbound");
+        }
+        String downloadUrl = this.fileStoreService.getPresignedDownloadUrl(FileStoreService.INBOUND_BUCKET, attachment.getFilePath(), attachment.getFileName());
+        return GetInboundAttachmentDownloadUrlResponse.builder()
+            .url(downloadUrl)
+            .build();
     }
 }
