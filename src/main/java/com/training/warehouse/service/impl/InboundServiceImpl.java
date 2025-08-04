@@ -22,9 +22,12 @@ import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.request.GetInboundsRequest;
 import com.training.warehouse.dto.request.GetInventoryRequest;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
+import com.training.warehouse.dto.response.GetInboundByIdResponse;
+import com.training.warehouse.dto.response.GetInboundsResponse;
 import com.training.warehouse.dto.response.GetInventoryResponse;
 import com.training.warehouse.dto.response.UpdateInboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
@@ -164,5 +167,35 @@ public class InboundServiceImpl implements InboundService {
                     .build();
             }).collect(Collectors.toList()))
             .build();
+    }
+
+    @Override
+    public GetInboundByIdResponse getInboundById(long id) {
+        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(id);
+        if (inboundResult.isEmpty()) {
+            throw new NotFoundException("inbound not found");
+        }
+        InboundEntity inbound = inboundResult.get();
+        return GetInboundByIdResponse.builder()
+            .id(inbound.getId())
+            .invoice(inbound.getInvoice())
+            .productType(inbound.getProductType().name())
+            .supplierCd(inbound.getSupplierCd().name())
+            .receiveDate(inbound.getReceiveDate())
+            .orderStatus(inbound.getStatus().name())
+            .quantity(inbound.getQuantity())
+            .createdAt(inbound.getCreatedAt())
+            .updatedAt(inbound.getUpdatedAt())
+            .creator(GetInboundByIdResponse.InboundCreatorResponse.builder()
+                .email(inbound.getUser().getEmail())
+                .fullName(inbound.getUser().getFullName())
+                .build()
+            ).build();
+    }
+
+    @Override
+    public GetInboundsResponse getInbounds(GetInboundsRequest query) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getInbounds'");
     }
 }
