@@ -14,10 +14,12 @@ import lombok.AllArgsConstructor;
 import com.training.warehouse.dto.request.CreateInboundRequest;
 import com.training.warehouse.dto.request.GetInboundsRequest;
 import com.training.warehouse.dto.request.GetInventoryRequest;
+import com.training.warehouse.dto.request.ImportInboundDataRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
 import com.training.warehouse.dto.response.GetInboundByIdResponse;
 import com.training.warehouse.dto.response.GetInboundsResponse;
 import com.training.warehouse.dto.response.GetInventoryResponse;
+import com.training.warehouse.dto.response.ImportInboundDataResponse;
 import com.training.warehouse.dto.response.UpdateInboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
 
@@ -404,5 +406,71 @@ public class InboundController {
     @GetMapping()
     public ResponseEntity<GetInboundsResponse> getMany(@ParameterObject @Valid GetInboundsRequest query) {
         return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.getInbounds(query));
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "POST",
+        summary = "import inbound data",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(
+                name = "bearerAuth"
+            ),
+        },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "request", 
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "multipart/form-data",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ImportInboundDataRequest.class)
+            )
+        ),
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "success",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ImportInboundDataResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+        }
+    )
+    @PostMapping(path = "/import-data", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImportInboundDataResponse> importData(@ModelAttribute @Valid ImportInboundDataRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.importInboundData(user, request));
     }
 }
