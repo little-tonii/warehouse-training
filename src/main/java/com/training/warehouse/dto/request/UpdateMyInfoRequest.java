@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserUpdateInfoRequest {
+public class UpdateMyInfoRequest {
 
     @NotBlank(message = "full name is required")
     @JsonProperty("full_name")

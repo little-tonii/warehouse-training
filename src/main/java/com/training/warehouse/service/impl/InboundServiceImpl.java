@@ -16,6 +16,7 @@ import com.training.warehouse.exception.NotFoundException;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundRepository;
+import com.training.warehouse.repository.projection.InboundProjection;
 import com.training.warehouse.repository.projection.InventoryProjection;
 import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.InboundService;
@@ -25,9 +26,12 @@ import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.request.GetInboundsRequest;
 import com.training.warehouse.dto.request.GetInventoryRequest;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
+import com.training.warehouse.dto.response.GetInboundByIdResponse;
+import com.training.warehouse.dto.response.GetInboundsResponse;
 import com.training.warehouse.dto.response.GetInventoryResponse;
 import com.training.warehouse.dto.response.UpdateInboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
@@ -167,6 +171,61 @@ public class InboundServiceImpl implements InboundService {
                     .build();
             }).collect(Collectors.toList()))
             .build();
+    }
+
+    @Override
+    public GetInboundByIdResponse getInboundById(long id) {
+        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(id);
+        if (inboundResult.isEmpty()) {
+            throw new NotFoundException("inbound not found");
+        }
+        InboundEntity inbound = inboundResult.get();
+        return GetInboundByIdResponse.builder()
+            .id(inbound.getId())
+            .invoice(inbound.getInvoice())
+            .productType(inbound.getProductType().name())
+            .supplierCd(inbound.getSupplierCd().name())
+            .receiveDate(inbound.getReceiveDate())
+            .orderStatus(inbound.getStatus().name())
+            .quantity(inbound.getQuantity())
+            .createdAt(inbound.getCreatedAt())
+            .updatedAt(inbound.getUpdatedAt())
+            .creator(GetInboundByIdResponse.InboundCreatorResponse.builder()
+                .email(inbound.getUser().getEmail())
+                .fullName(inbound.getUser().getFullName())
+                .build()
+            ).build();
+    }
+
+    @Override
+    public GetInboundsResponse getInbounds(GetInboundsRequest query) {
+        List<InboundProjection> inbounds = this.inboundRepository.findInboundNative(
+            query.getLimit(), (query.getPage() - 1) * query.getLimit(), query.getDirection()
+        );
+        long total = this.inboundRepository.count();
+        return GetInboundsResponse.builder()
+            .page(query.getPage())
+            .limit(query.getLimit())
+            .total(total)
+            .inbounds(inbounds.stream()
+                .map((e) -> {
+                    return GetInboundByIdResponse.builder()
+                        .id(e.getId())
+                        .invoice(e.getInvoice())
+                        .productType(e.getProductType())
+                        .supplierCd(e.getSupplierCd())
+                        .receiveDate(e.getReceiveDate())
+                        .orderStatus(OrderStatus.fromValue(e.getOrderStatus()).name())
+                        .quantity(e.getQuantity())
+                        .createdAt(e.getCreatedAt())
+                        .updatedAt(e.getUpdatedAt())
+                        .creator(GetInboundByIdResponse.InboundCreatorResponse.builder()
+                            .email(e.getCreatorEmail())
+                            .fullName(e.getCreatorFullName())
+                            .build()
+                        ).build();
+                }).collect(Collectors.toList())
+            ).build();
     }
 
     // @Override
