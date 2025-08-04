@@ -6,6 +6,7 @@ import com.training.warehouse.dto.request.GetInventoryRequest;
 import com.training.warehouse.dto.request.ImportInboundDataRequest;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
+import com.training.warehouse.dto.response.GetInboundAttachmentDownloadUrlResponse;
 import com.training.warehouse.dto.response.GetInboundByIdResponse;
 import com.training.warehouse.dto.response.GetInboundsResponse;
 import com.training.warehouse.dto.response.GetInventoryResponse;
@@ -21,4 +22,5 @@ public interface InboundService {
     GetInboundByIdResponse getInboundById(long id);
     GetInboundsResponse getInbounds(GetInboundsRequest query);
     ImportInboundDataResponse importInboundData(UserEntity user, ImportInboundDataRequest request);
+    GetInboundAttachmentDownloadUrlResponse getInboundAttachmentDownloadUrl(long inboundId, long attachmentId);
 }

@@ -16,6 +16,7 @@ import com.training.warehouse.dto.request.GetInboundsRequest;
 import com.training.warehouse.dto.request.GetInventoryRequest;
 import com.training.warehouse.dto.request.ImportInboundDataRequest;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
+import com.training.warehouse.dto.response.GetInboundAttachmentDownloadUrlResponse;
 import com.training.warehouse.dto.response.GetInboundByIdResponse;
 import com.training.warehouse.dto.response.GetInboundsResponse;
 import com.training.warehouse.dto.response.GetInventoryResponse;
@@ -472,5 +473,78 @@ public class InboundController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserEntity user = (UserEntity) authentication.getPrincipal();
         return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.importInboundData(user, request));
+    }
+
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "GET",
+        summary = "get inbound attachment download url",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"),
+        },
+        parameters = {
+            @io.swagger.v3.oas.annotations.Parameter(
+                name = "inboundId",
+                in = ParameterIn.PATH,
+                required = true,
+                schema = @Schema(type = "integer", format = "int64", minimum = "1")
+            ),
+            @io.swagger.v3.oas.annotations.Parameter(
+                name = "attachmentId",
+                in = ParameterIn.PATH,
+                required = true,
+                schema = @Schema(type = "integer", format = "int64", minimum = "1")
+            )
+        },
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "success",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = GetInboundAttachmentDownloadUrlResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "bad request",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "not found",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            )
+        }
+    )
+    @GetMapping("/{inboundId}/attachment/{attachmentId}/download-url")
+    public ResponseEntity<GetInboundAttachmentDownloadUrlResponse> getAttachmentDownloadUrl(
+        @PathVariable @Min(value = 1, message = "inbound id must be greater than 0") long inboundId,
+        @PathVariable @Min(value = 1, message = "attachment id must be greater than 0") long attachmentId) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+            this.inboundService.getInboundAttachmentDownloadUrl(inboundId, attachmentId)
+        );
     }
 }
