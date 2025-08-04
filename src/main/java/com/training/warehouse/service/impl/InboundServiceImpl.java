@@ -1,10 +1,15 @@
 package com.training.warehouse.service.impl;
 
-import java.util.List;
-import java.util.Optional;
-
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
@@ -21,6 +26,8 @@ import com.training.warehouse.repository.projection.InventoryProjection;
 import com.training.warehouse.service.FileStoreService;
 import com.training.warehouse.service.InboundService;
 
+import java.net.URLConnection;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,11 +35,13 @@ import lombok.AllArgsConstructor;
 import com.training.warehouse.dto.request.CreateInboundRequest;
 import com.training.warehouse.dto.request.GetInboundsRequest;
 import com.training.warehouse.dto.request.GetInventoryRequest;
+import com.training.warehouse.dto.request.ImportInboundDataRequest;
 import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
 import com.training.warehouse.dto.response.CreateInboundResponse;
 import com.training.warehouse.dto.response.GetInboundByIdResponse;
 import com.training.warehouse.dto.response.GetInboundsResponse;
 import com.training.warehouse.dto.response.GetInventoryResponse;
+import com.training.warehouse.dto.response.ImportInboundDataResponse;
 import com.training.warehouse.dto.response.UpdateInboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.ProductType;
@@ -228,102 +237,128 @@ public class InboundServiceImpl implements InboundService {
             ).build();
     }
 
-    // @Override
-    // public Map<String, Object> importFromCsv(MultipartFile file) {
-    //     List<InboundEntity> validEntities = new ArrayList<>();
-    //     List<String> errors = new ArrayList<>();
-    //     UserEntity currUser = (UserEntity) SecurityContextHolder
-    //             .getContext()
-    //             .getAuthentication()
-    //             .getPrincipal();
-    //     try (Reader reader = new InputStreamReader(file.getInputStream());
-    //          CSVReader csvReader = new CSVReader(reader)) {
-    //         List<String[]> allRows = csvReader.readAll();
-
-    //         if (allRows.isEmpty()) throw new IllegalArgumentException("File is empty");
-
-    //         String[] headers = allRows.get(0);
-    //         Map<String, Integer> headerMap = new HashMap<>();
-    //         for (int i = 0; i < headers.length; i++) {
-    //             String header = headers[i].trim().toLowerCase().replaceAll("\\s+", "");
-    //             headerMap.put(header, i);
-    //         }
-
-    //         List<String> required = List.of("suppliercountry", "invoice", "producttype", "quantity", "receivedate");
-    //         for (String field : required) {
-    //             if (!headerMap.containsKey(field)) {
-    //                 throw new IllegalArgumentException("Missing Column" + field);
-    //             }
-    //         }
-
-    //         for (int i = 1; i < allRows.size(); i++) {
-    //             String[] row = allRows.get(i);
-
-    //             try {
-    //                 InboundImportFileRequest dto = new InboundImportFileRequest();
-
-    //                 dto.setInvoice(row[headerMap.get("invoice")]);
-    //                 dto.setSupplierCd(row[headerMap.get("suppliercountry")]);
-    //                 dto.setProductType(row[headerMap.get("producttype")]);
-    //                 dto.setQuantity(Long.parseLong(row[headerMap.get("quantity")]));
-
-    //                 String dateStr = row[headerMap.get("receivedate")];
-    //                 if (dateStr != null && !dateStr.isBlank()) {
-    //                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
-    //                     LocalDateTime receiveDate = LocalDate.parse(dateStr, formatter).atStartOfDay();
-    //                     dto.setReceiveDate(receiveDate);
-    //                 }
-
-    //                 dto.setStatus(OrderStatus.NOT_EXPORTED);
-
-    //                 Set<ConstraintViolation<InboundImportFileRequest>> violations = validator.validate(dto);
-
-    //                 if (!violations.isEmpty()) {
-    //                     String message = violations.stream()
-    //                             .map(ConstraintViolation::getMessage)
-    //                             .collect(Collectors.joining("; "));
-    //                     throw new IllegalArgumentException(message);
-    //                 }
-
-    //                 if (inboundRepository.findByInvoice(dto.getInvoice()).isPresent()) {
-    //                     throw new BadRequestException("Invoice đã tồn tại");
-    //                 }
-
-    //                 InboundEntity entity = InboundEntity.builder()
-    //                         .invoice(dto.getInvoice())
-    //                         .status(dto.getStatus())
-    //                         .supplierCd(SupplierCd.fromCode(dto.getSupplierCd()))
-    //                         .quantity(dto.getQuantity())
-    //                         .productType(ProductType.fromString(dto.getProductType()))
-    //                         .receiveDate(dto.getReceiveDate())
-    //                         .user(currUser)
-    //                         .build();
-
-    //                 validEntities.add(entity);
-    //             } catch (Exception e) {
-    //                 errors.add("Lỗi dòng " + (i + 1) + ": " + e.getMessage());
-    //             }
-    //         }
-
-    //         try {
-    //             if (errors.isEmpty()) {
-    //                 inboundRepository.saveAll(validEntities);
-    //             }
-    //         } catch (DataIntegrityViolationException e) {
-    //             throw new RuntimeException("Lỗi lưu dữ liệu: " + e.getMessage(), e);
-    //         }
-
-    //         if (!errors.isEmpty()) {
-    //             errors.add("Import completed with some errors:\n" + String.join("\n", errors));
-    //         }
-    //     } catch (IOException | CsvException e) {
-    //         throw new RuntimeException("Failed to read CSV file", e);
-    //     }
-    //     Map<String, Object> result = new HashMap<>();
-    //     if(errors.isEmpty())
-    //         result.put("success", validEntities.size() + " hàng được import");
-    //     else result.put("errorMessages", errors);
-
-    //     return result;
-    // }
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ImportInboundDataResponse importInboundData(UserEntity user, ImportInboundDataRequest request) {
+        MultipartFile dataFile = request.getDataFiles().get(0);
+        String fileName = dataFile.getOriginalFilename();
+        List<String> allowContentType = List.of(
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        if (fileName == null || fileName.isBlank()) {
+            throw new BadRequestException("filename is not valid");
+        }
+        String cleanedFileName = Paths.get(fileName).getFileName().toString();
+        if (!cleanedFileName.matches("^[a-zA-Z0-9._-]{1,255}$")) {
+            throw new BadRequestException("filename is not valid");
+        }
+        String contentType = URLConnection.guessContentTypeFromName(cleanedFileName);
+        if (contentType == null || !allowContentType.contains(contentType)) {
+            throw new BadRequestException("filetype is not allowed");
+        }
+        try (Workbook workbook = new XSSFWorkbook(dataFile.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            long rowCount = sheet.getPhysicalNumberOfRows();
+            if (rowCount < 2) {
+                throw new BadRequestException("file must contain at least 1 data row");
+            }
+            long currentRow = 0;
+            while (sheet.iterator().hasNext()) {
+                currentRow++;
+                Row row = sheet.iterator().next();
+                Cell invoiceCell = row.getCell(0);
+                Cell productTypeCell = row.getCell(1);
+                Cell supplierCdCell = row.getCell(2);
+                Cell receiveDateCell = row.getCell(3);
+                Cell statusCell = row.getCell(4);
+                Cell quantityCell = row.getCell(5);
+                if (row.getRowNum() == 0) {
+                    if (invoiceCell == null 
+                            || invoiceCell.getCellType() != CellType.STRING 
+                            || invoiceCell.getStringCellValue() == null 
+                            || !"invoice".equalsIgnoreCase(invoiceCell.getStringCellValue().trim())) {
+                        throw new BadRequestException("column 1 must be 'invoice'");
+                    }
+                    if (productTypeCell == null 
+                            || productTypeCell.getCellType() != CellType.STRING 
+                            || productTypeCell.getStringCellValue() == null 
+                            || !"product type".equalsIgnoreCase(productTypeCell.getStringCellValue().trim())) {
+                        throw new BadRequestException("column 2 must be 'product type'");
+                    }
+                    if (supplierCdCell == null 
+                            || supplierCdCell.getCellType() != CellType.STRING 
+                            || supplierCdCell.getStringCellValue() == null 
+                            || !"supplier cd".equalsIgnoreCase(supplierCdCell.getStringCellValue().trim())) {
+                        throw new BadRequestException("column 3 must be 'supplier cd'");
+                    }
+                    if (receiveDateCell == null 
+                            || receiveDateCell.getCellType() != CellType.STRING 
+                            || receiveDateCell.getStringCellValue() == null 
+                            || !"receive date".equalsIgnoreCase(receiveDateCell.getStringCellValue().trim())) {
+                        throw new BadRequestException("column 4 must be 'receive date'");
+                    }
+                    if (statusCell == null 
+                            || statusCell.getCellType() != CellType.STRING 
+                            || statusCell.getStringCellValue() == null 
+                            || !"status".equalsIgnoreCase(statusCell.getStringCellValue().trim())) {
+                        throw new BadRequestException("column 5 must be 'status'");
+                    }
+                    if (quantityCell == null 
+                            || quantityCell.getCellType() != CellType.STRING 
+                            || quantityCell.getStringCellValue() == null 
+                            || !"quantity".equalsIgnoreCase(quantityCell.getStringCellValue().trim())) {
+                        throw new BadRequestException("column 6 must be 'quantity'");
+                    }
+                    continue;
+                }
+                if (invoiceCell == null 
+                    || invoiceCell.getCellType() != CellType.STRING
+                    || invoiceCell.getStringCellValue() == null
+                    || invoiceCell.getStringCellValue().isBlank()) {
+                    throw new BadRequestException("invoice must be a string at row " + currentRow);
+                }
+                if (productTypeCell == null 
+                    || productTypeCell.getCellType() != CellType.STRING
+                    || productTypeCell.getStringCellValue() == null
+                    || productTypeCell.getStringCellValue().isBlank()) {
+                    throw new BadRequestException("product type must be a string at row " + currentRow);
+                }
+                if (supplierCdCell == null 
+                    || supplierCdCell.getCellType() != CellType.STRING
+                    || supplierCdCell.getStringCellValue() == null
+                    || supplierCdCell.getStringCellValue().isBlank()) {
+                    throw new BadRequestException("supplier cd must be a string at row " + currentRow);
+                }
+                if (receiveDateCell == null 
+                    || receiveDateCell.getCellType() != CellType.NUMERIC
+                    || !DateUtil.isCellDateFormatted(receiveDateCell)) {
+                    throw new BadRequestException("receive date must be a date at row " + currentRow);
+                }
+                if (statusCell == null
+                    || statusCell.getCellType() != CellType.NUMERIC
+                    || (statusCell.getNumericCellValue() < 0 && statusCell.getNumericCellValue() > 2)) {
+                    throw new BadRequestException("status must be a number and between [0, 2] at row " + currentRow);
+                }
+                if (quantityCell == null 
+                    || quantityCell.getCellType() != CellType.NUMERIC
+                    || quantityCell.getNumericCellValue() < 0) {
+                    throw new BadRequestException("quantity must be a positive number at row " + currentRow);
+                }
+                InboundEntity newInbound = InboundEntity.builder()
+                    .invoice(invoiceCell.getStringCellValue().trim())
+                    .productType(ProductType.fromString(productTypeCell.getStringCellValue().trim()))
+                    .supplierCd(SupplierCd.fromCode(supplierCdCell.getStringCellValue().trim()))
+                    .receiveDate(receiveDateCell.getLocalDateTimeCellValue())
+                    .status(OrderStatus.fromValue((long) statusCell.getNumericCellValue()))
+                    .quantity((long) quantityCell.getNumericCellValue())
+                    .user(user)
+                    .build();
+                this.inboundRepository.save(newInbound);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        return ImportInboundDataResponse.builder().message("success").build();
+    }
 }
