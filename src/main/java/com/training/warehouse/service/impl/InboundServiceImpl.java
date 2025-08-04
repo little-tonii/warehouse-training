@@ -83,6 +83,10 @@ public class InboundServiceImpl implements InboundService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CreateInboundResponse createInbound(UserEntity user, CreateInboundRequest request) {
+        Optional<InboundEntity> existingInbound = this.inboundRepository.findByInvoice(request.getInvoice());
+        if (existingInbound.isPresent()) {
+            throw new BadRequestException("invoice already exists");
+        }
         List<String> filePaths = new ArrayList<>();
         request.getAttachments().stream().forEach((e) -> {
             String path = UUID.randomUUID().toString();
@@ -123,6 +127,10 @@ public class InboundServiceImpl implements InboundService {
         Optional<OutboundEntity> outboundResult = this.outboundRepository.findFirstByInboundId(inbound.getId());
         if (outboundResult.isPresent()) {
             throw new BadRequestException("inbound is not editable");
+        }
+        Optional<InboundEntity> existingInbound = this.inboundRepository.findByInvoice(request.getInvoice());
+        if (existingInbound.isPresent() && existingInbound.get().getId() != id) {
+            throw new BadRequestException("invoice already exists");
         }
         List<InboundAttachmentEntity> inboundAttachments = this.inboundAttachmentRepository.findByInboundId(inbound.getId());
         if (inboundAttachments.size() + request.getAttachments().size() > 5) {
@@ -344,6 +352,10 @@ public class InboundServiceImpl implements InboundService {
                     || quantityCell.getCellType() != CellType.NUMERIC
                     || quantityCell.getNumericCellValue() < 0) {
                     throw new BadRequestException("quantity must be a positive number at row " + currentRow);
+                }
+                Optional<InboundEntity> existingInbound = this.inboundRepository.findByInvoice(invoiceCell.getStringCellValue().trim());
+                if (existingInbound.isPresent()) {
+                    throw new BadRequestException("invoice " + invoiceCell.getStringCellValue().trim() + " already exists at row " + currentRow);
                 }
                 InboundEntity newInbound = InboundEntity.builder()
                     .invoice(invoiceCell.getStringCellValue().trim())
