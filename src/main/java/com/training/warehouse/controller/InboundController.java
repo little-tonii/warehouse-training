@@ -1,12 +1,7 @@
 package com.training.warehouse.controller;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.training.warehouse.exception.handler.ExceptionResponse;
 import com.training.warehouse.service.InboundService;
@@ -16,6 +11,29 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 
+import com.training.warehouse.dto.request.CreateInboundRequest;
+import com.training.warehouse.dto.request.GetInboundsRequest;
+import com.training.warehouse.dto.request.GetInventoryRequest;
+import com.training.warehouse.dto.request.ImportInboundDataRequest;
+import com.training.warehouse.dto.response.CreateOutboundResponse;
+import com.training.warehouse.dto.response.GetInboundByIdResponse;
+import com.training.warehouse.dto.response.GetInboundsResponse;
+import com.training.warehouse.dto.response.GetInventoryResponse;
+import com.training.warehouse.dto.response.ImportInboundDataResponse;
+import com.training.warehouse.dto.response.UpdateInboundByIdResponse;
+import com.training.warehouse.entity.UserEntity;
+
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
+
+import com.training.warehouse.dto.request.UpdateInboundByIdRequest;
+import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
+
 @Controller
 @RequestMapping("/api/inbound")
 @AllArgsConstructor
@@ -23,7 +41,6 @@ import lombok.AllArgsConstructor;
 @Validated
 public class InboundController {
     private final InboundService inboundService;
-
 
     @io.swagger.v3.oas.annotations.Operation(
         method = "DELETE",
@@ -82,5 +99,378 @@ public class InboundController {
     public ResponseEntity<?> deleteById(@PathVariable @Min(value = 1, message = "inboundId must be greater than 0") long id) {
         inboundService.deleteInboundById(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "POST",
+        summary = "create inbound",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(
+                name = "bearerAuth"
+            ),
+        },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "request", 
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "multipart/form-data",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = CreateInboundRequest.class)
+            )
+        ),
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "201",
+                description = "created",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = CreateOutboundResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+        }
+    )
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> create(@ModelAttribute @Valid CreateInboundRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        return ResponseEntity.status(HttpStatus.CREATED).body(inboundService.createInbound(user, request));
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "PUT",
+        summary = "update inbound by id",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(
+                name = "bearerAuth"
+            ),
+        },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "request", 
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "multipart/form-data",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = UpdateInboundByIdRequest.class)
+            )
+        ),
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "success",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = UpdateOutboundByIdResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "not found",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+        }
+    )
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UpdateInboundByIdResponse> updateById(
+        @PathVariable @Min(value = 1, message = "inbound id must be greater than 0") long id,
+        @ModelAttribute @Valid UpdateInboundByIdRequest request) {
+        return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.updateInboundById(id, request));    
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "GET",
+        summary = "get inventory",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"),
+        },
+        parameters = {
+            @io.swagger.v3.oas.annotations.Parameter(
+                name = "page",
+                in = ParameterIn.QUERY,
+                required = true,
+                schema = @Schema(type = "integer", format = "int64")
+            ),
+            @io.swagger.v3.oas.annotations.Parameter(
+                name = "limit",
+                in = ParameterIn.QUERY,
+                required = true,
+                schema = @Schema(type = "integer", format = "int64")
+            )
+        },
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "success"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            )
+        }
+    )
+    @GetMapping("/inventory")
+    public ResponseEntity<GetInventoryResponse> getInventory(@ParameterObject @Valid GetInventoryRequest query) {
+        return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.getInventory(query));
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "GET",
+        summary = "get inbound by id",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"),
+        },
+        parameters = {
+            @io.swagger.v3.oas.annotations.Parameter(
+                name = "id",
+                in = ParameterIn.PATH,
+                required = true,
+                schema = @Schema(type = "integer", format = "int64", minimum = "1")
+            )
+        },
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "success",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = GetInboundByIdResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "inbound not found",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            )
+        }
+    )
+    @GetMapping("/{id}")
+    public ResponseEntity<GetInboundByIdResponse> getById(@PathVariable @Min(value = 1, message = "inbound id must be greater than 0") long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.getInboundById(id));
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "GET",
+        summary = "get inbounds",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"),
+        },
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "success",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = GetInboundsResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ExceptionResponse.class)
+                )
+            )
+        }
+    )
+    @GetMapping()
+    public ResponseEntity<GetInboundsResponse> getMany(@ParameterObject @Valid GetInboundsRequest query) {
+        return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.getInbounds(query));
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+        method = "POST",
+        summary = "import inbound data",
+        security = {
+            @io.swagger.v3.oas.annotations.security.SecurityRequirement(
+                name = "bearerAuth"
+            ),
+        },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "request", 
+            required = true,
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = "multipart/form-data",
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ImportInboundDataRequest.class)
+            )
+        ),
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "success",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ImportInboundDataResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "invalid request data",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "unauthorized",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "internal server error",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = "application/json",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(
+                        implementation = ExceptionResponse.class
+                    )
+                )
+            ),
+        }
+    )
+    @PostMapping(path = "/import-data", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImportInboundDataResponse> importData(@ModelAttribute @Valid ImportInboundDataRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        return ResponseEntity.status(HttpStatus.OK).body(this.inboundService.importInboundData(user, request));
     }
 }

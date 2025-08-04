@@ -2,17 +2,13 @@ package com.training.warehouse.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
-public class UserUpdateInfoResponse {
-
+@Data
+public class CreateInboundResponse {
     @JsonProperty("id")
     private long id;
 }

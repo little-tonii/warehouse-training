@@ -13,13 +13,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.training.warehouse.service.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.training.warehouse.dto.request.CreateOutboundRequest;
+import com.training.warehouse.dto.request.UpdateOutboundByIdRequest;
+import com.training.warehouse.dto.response.ConfirmOutboundByIdResponse;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
+import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 import com.training.warehouse.entity.InboundAttachmentEntity;
 import com.training.warehouse.entity.InboundEntity;
 import com.training.warehouse.entity.OutboundAttachmentEntity;
@@ -28,15 +32,10 @@ import com.training.warehouse.entity.UserEntity;
 import com.training.warehouse.enumeric.ShippingMethod;
 import com.training.warehouse.exception.BadRequestException;
 import com.training.warehouse.exception.NotFoundException;
-import com.training.warehouse.exception.handler.ExceptionMessage;
 import com.training.warehouse.repository.InboundAttachmentRepository;
 import com.training.warehouse.repository.InboundRepository;
 import com.training.warehouse.repository.OutboundAttachmentRepository;
 import com.training.warehouse.repository.OutboundRepository;
-import com.training.warehouse.service.ExcelService;
-import com.training.warehouse.service.FileStoreService;
-import com.training.warehouse.service.OutboundService;
-import com.training.warehouse.service.PdfService;
 
 import lombok.AllArgsConstructor;
 
@@ -64,18 +63,18 @@ public class OutboundServiceImpl implements OutboundService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public byte[] confirmOutboundById(long outboundId) {
+    public ConfirmOutboundByIdResponse confirmOutboundById(long outboundId) {
         Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
         if (outboundResult.isEmpty()) {
-            throw new NotFoundException(ExceptionMessage.OUTBOUND_NOT_FOUND);
+            throw new NotFoundException("outbound not found");
         }
         OutboundEntity outbound = outboundResult.get();
         if (outbound.isConfirmed()) {
-            throw new BadRequestException(ExceptionMessage.OUTBOUND_CONFIRMED);
+            throw new BadRequestException("outbound was confirmed");
         }
         Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
         if (inboundResult.isEmpty()) {
-            throw new NotFoundException(ExceptionMessage.INBOUND_NOT_FOUND);
+            throw new NotFoundException("inbound not found");
         }
         List<InboundAttachmentEntity> inboundAttachments = this.inboundAttachmentRepository
                 .findByInboundId(outbound.getInboundId());
@@ -99,7 +98,14 @@ public class OutboundServiceImpl implements OutboundService {
         outbound.setActualShippingDate(LocalDateTime.now());
         this.outboundRepository.save(outbound);
         this.fileStoreService.uploadFile(FileStoreService.OUTBOUND_BUCKET, filePath, fileName, mergedFile);
-        return mergedFile;
+        String url = this.fileStoreService.getPresignedDownloadUrl(
+            FileStoreService.OUTBOUND_BUCKET,
+            filePath, 
+            fileName
+        );
+        return ConfirmOutboundByIdResponse.builder()
+            .url(url)
+            .build();
     }
 
     @Override
@@ -199,89 +205,29 @@ public class OutboundServiceImpl implements OutboundService {
     }
 
     @Override
-    @Transactional
-    public Map<String, Object> importCsvExportPlan(MultipartFile file) {
-        List<OutboundEntity> validEntities = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
-        UserEntity currUser = (UserEntity) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
-
-        try (Reader reader = new InputStreamReader(file.getInputStream());
-             CSVReader csvReader = new CSVReader(reader)) {
-
-            List<String[]> allRows = csvReader.readAll();
-
-            if (allRows.isEmpty()) throw new IllegalArgumentException("File is empty");
-
-            String[] headers = allRows.get(0);
-            Map<String, Integer> headerMap = new HashMap<>();
-            for (int i = 0; i < headers.length; i++) {
-                String header = headers[i].trim().toLowerCase().replaceAll("\\s+", "");
-                headerMap.put(header, i);
-            }
-
-            List<String> required = List.of("invoice", "quantity", "shippingmethod", "expectedshippingdate");
-            for (String field : required) {
-                if (!headerMap.containsKey(field)) {
-                    throw new IllegalArgumentException("Thiếu cột bắt buộc: " + field);
-                }
-            }
-
-            for (int i = 1; i < allRows.size(); i++) {
-                String[] row = allRows.get(i);
-
-                try {
-                    String invoice = row[headerMap.get("invoice")].trim();
-                    String quantityStr = row[headerMap.get("quantity")].trim();
-                    String shippingMethodStr = row[headerMap.get("shippingmethod")].trim();
-                    String expectedDateStr = row[headerMap.get("expectedshippingdate")].trim();
-
-                    if (invoice.isEmpty() || quantityStr.isEmpty() || shippingMethodStr.isEmpty() || expectedDateStr.isEmpty()) {
-                        throw new IllegalArgumentException("Dữ liệu không được để trống");
-                    }
-
-                    long quantity = Long.parseLong(quantityStr);
-                    ShippingMethod shippingMethod = ShippingMethod.valueOf(shippingMethodStr.toUpperCase());
-
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
-                    LocalDateTime expectedShippingDate = LocalDate.parse(expectedDateStr, formatter).atStartOfDay();
-
-
-                    InboundEntity inbound = inboundRepository.findByInvoice(invoice)
-                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy invoice: " + invoice));
-
-                    OutboundEntity outbound = OutboundEntity.builder()
-                            .inboundId(inbound.getId())
-                            .quantity(quantity)
-                            .shippingMethod(shippingMethod)
-                            .expectedShippingDate(expectedShippingDate)
-                            .isConfirmed(false)
-                            .user(currUser)
-                            .build();
-
-                    validEntities.add(outbound);
-                } catch (Exception e) {
-                    errors.add("Lỗi dòng " + (i + 1) + ": " + e.getMessage());
-                }
-            }
-
-            if (errors.isEmpty()) {
-                outboundRepository.saveAll(validEntities);
-            }
-
-        } catch (IOException | CsvException e) {
-            throw new RuntimeException("Không đọc được file CSV", e);
+    public UpdateOutboundByIdResponse updateOutboundById(long outboundId, UpdateOutboundByIdRequest request) {
+        Optional<OutboundEntity> outboundResult = this.outboundRepository.findById(outboundId);
+        if (outboundResult.isEmpty()) {
+            throw new NotFoundException("outbound not found");
         }
-
-        Map<String, Object> result = new HashMap<>();
-        if (errors.isEmpty()) {
-            result.put("success", validEntities.size() + " dòng đã được import thành công.");
-        } else {
-            result.put("errorMessages", errors);
+        OutboundEntity outbound = outboundResult.get();
+        Optional<InboundEntity> inboundResult = this.inboundRepository.findById(outbound.getInboundId());
+        if (inboundResult.isEmpty()) {
+            throw new NotFoundException("inbound not found");
         }
-
-        return result;
+        InboundEntity inbound = inboundResult.get();
+        List<OutboundEntity> outbounds = this.outboundRepository.findByInboundId(inbound.getId());
+        long totalOutboundQuantity = outbounds.stream().mapToLong((e) -> e.getQuantity()).sum();
+        if (totalOutboundQuantity - outbound.getQuantity() + request.getQuantity() > inbound.getQuantity()) {
+            throw new BadRequestException("not enough quantity");
+        }
+        outbound.setQuantity(request.getQuantity());
+        outbound.setExpectedShippingDate(request.getExpectedShippingDate());
+        outbound.setShippingMethod(ShippingMethod.fromCode(request.getShippingMethod()));
+        OutboundEntity updatedOutbound = this.outboundRepository.save(outbound);
+        return UpdateOutboundByIdResponse.builder()
+                .id(updatedOutbound.getId())
+                .build();
     }
+
 }
