@@ -23,8 +23,8 @@ public class AlertScheduler {
 
     // @Scheduled(cron = "second minute hour dayOfMonth month dayOfWeek")
 
-    // @Scheduled(cron = "0 0 18 * * *")
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "0 0 8 * * *")
+    // @Scheduled(cron = "*/30 * * * * *")
     public void alertOutboundsNearDueDate() {
         log.info("start running alert outbound near due date job");
         LocalDateTime to = LocalDateTime.now();
@@ -54,7 +54,7 @@ public class AlertScheduler {
         }
     }
 
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "0 0 8 * * *")
     public void alertLateOutbounds() {
         log.info("start running alert late outbound job");
         long page = 1;
