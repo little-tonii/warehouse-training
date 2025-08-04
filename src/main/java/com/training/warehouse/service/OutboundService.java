@@ -7,7 +7,6 @@ import com.training.warehouse.dto.response.ConfirmOutboundByIdResponse;
 import com.training.warehouse.dto.response.CreateOutboundResponse;
 import com.training.warehouse.dto.response.UpdateOutboundByIdResponse;
 import com.training.warehouse.entity.UserEntity;
-import org.springframework.web.multipart.MultipartFile;
 
 public interface OutboundService {
     ConfirmOutboundByIdResponse confirmOutboundById(long outboundId);
