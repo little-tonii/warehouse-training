@@ -61,8 +61,4 @@ public class InboundEntity extends BaseEntity {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "inb_id", referencedColumnName = "id")
     private List<OutboundEntity> outbounds;
-
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "inb_id", referencedColumnName = "id")
-    private List<InboundAttachmentEntity> attachments;
 }
