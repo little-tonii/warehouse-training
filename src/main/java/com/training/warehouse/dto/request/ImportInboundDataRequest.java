@@ -4,9 +4,8 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,8 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ImportInboundDataRequest {
-    @Min(value = 1, message = "only accept 1 data file")
-    @Max(value = 1, message = "only accept 1 data file")
     @NotNull(message = "data file must not be null")
+    @Size(min = 1, max = 1, message = "only accept 1 data file")
     private List<MultipartFile> dataFiles;
 }

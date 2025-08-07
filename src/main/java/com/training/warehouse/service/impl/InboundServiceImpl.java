@@ -287,7 +287,11 @@ public class InboundServiceImpl implements InboundService {
                 throw new BadRequestException("file must contain at least 1 data row");
             }
             long currentRow = 0;
-            while (sheet.iterator().hasNext()) {
+            Iterator<Row> rowIterator = sheet.iterator();
+            if (!rowIterator.hasNext()) {
+                throw new BadRequestException("file must contain at least 1 data row");
+            }
+            while (rowIterator.hasNext()) {
                 currentRow++;
                 Row row = sheet.iterator().next();
                 Cell invoiceCell = row.getCell(0);
