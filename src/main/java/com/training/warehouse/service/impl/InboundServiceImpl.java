@@ -70,7 +70,7 @@ public class InboundServiceImpl implements InboundService {
             throw new BadRequestException("cannot delete inbound");
         }
         InboundEntity inbound = inboundResult.get();
-        List<InboundAttachmentEntity> attachments = inbound.getAttachments();
+        List<InboundAttachmentEntity> attachments = inboundAttachmentRepository.findByInboundId(inbound.getId());
         attachments.forEach(attachment -> {
             inboundAttachmentRepository.deleteById(attachment.getId());
         });
