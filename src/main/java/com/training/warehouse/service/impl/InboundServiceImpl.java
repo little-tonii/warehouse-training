@@ -293,7 +293,7 @@ public class InboundServiceImpl implements InboundService {
             }
             while (rowIterator.hasNext()) {
                 currentRow++;
-                Row row = sheet.iterator().next();
+                Row row = rowIterator.next();
                 Cell invoiceCell = row.getCell(0);
                 Cell productTypeCell = row.getCell(1);
                 Cell supplierCdCell = row.getCell(2);
@@ -342,19 +342,19 @@ public class InboundServiceImpl implements InboundService {
                 if (invoiceCell == null 
                     || invoiceCell.getCellType() != CellType.STRING
                     || invoiceCell.getStringCellValue() == null
-                    || invoiceCell.getStringCellValue().isBlank()) {
+                    || invoiceCell.getStringCellValue().isEmpty()) {
                     throw new BadRequestException("invoice must be a string at row " + currentRow);
                 }
                 if (productTypeCell == null 
                     || productTypeCell.getCellType() != CellType.STRING
                     || productTypeCell.getStringCellValue() == null
-                    || productTypeCell.getStringCellValue().isBlank()) {
+                    || productTypeCell.getStringCellValue().isEmpty()) {
                     throw new BadRequestException("product type must be a string at row " + currentRow);
                 }
                 if (supplierCdCell == null 
                     || supplierCdCell.getCellType() != CellType.STRING
                     || supplierCdCell.getStringCellValue() == null
-                    || supplierCdCell.getStringCellValue().isBlank()) {
+                    || supplierCdCell.getStringCellValue().isEmpty()) {
                     throw new BadRequestException("supplier cd must be a string at row " + currentRow);
                 }
                 if (receiveDateCell == null 
