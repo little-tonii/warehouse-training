@@ -16,16 +16,6 @@ import com.training.warehouse.exception.UnauthorizedException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
-        @ExceptionHandler(Exception.class)
-        public ResponseEntity<ExceptionResponse> handleException(Exception exception) {
-                return ResponseEntity
-                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(ExceptionResponse.builder()
-                                                .messages(List.of(exception.getMessage()))
-                                                .build());
-        }
-
         @ExceptionHandler(MethodArgumentNotValidException.class)
         public ResponseEntity<ExceptionResponse> handleValidationException(MethodArgumentNotValidException exception) {
                 List<String> messages = exception.getBindingResult()
@@ -80,6 +70,15 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ExceptionResponse> handleUnauthorizedException(UnauthorizedException exception) {
                 return ResponseEntity
                                 .status(HttpStatus.UNAUTHORIZED)
+                                .body(ExceptionResponse.builder()
+                                                .messages(List.of(exception.getMessage()))
+                                                .build());
+        }
+
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<ExceptionResponse> handleException(Exception exception) {
+                return ResponseEntity
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(ExceptionResponse.builder()
                                                 .messages(List.of(exception.getMessage()))
                                                 .build());

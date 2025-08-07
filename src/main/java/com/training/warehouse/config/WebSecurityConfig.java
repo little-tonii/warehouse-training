@@ -65,6 +65,9 @@ public class WebSecurityConfig {
                                 "/api/inbound",
                                 "/api/inbound/*/attachment/*/download-url"
                         ).authenticated()
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/inbound/*"
+                        ).authenticated()
                         // outbound
                         .requestMatchers(
                                 HttpMethod.GET,

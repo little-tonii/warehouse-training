@@ -28,6 +28,7 @@ import com.training.warehouse.service.InboundService;
 
 import java.net.URLConnection;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -339,55 +340,70 @@ public class InboundServiceImpl implements InboundService {
                     }
                     continue;
                 }
-                if (invoiceCell == null 
-                    || invoiceCell.getCellType() != CellType.STRING
-                    || invoiceCell.getStringCellValue() == null
-                    || invoiceCell.getStringCellValue().isEmpty()) {
-                    throw new BadRequestException("invoice must be a string at row " + currentRow);
+                String invoice;
+                ProductType productType;
+                SupplierCd supplierCd;
+                LocalDateTime receiveDate;
+                OrderStatus status;
+                long quantity;
+                try {
+                    invoice = String.valueOf((long) invoiceCell.getNumericCellValue());
+                    if (invoice.length() != 9) {
+                        throw new Exception();
+                    }            
+                } catch (Exception e) {
+                    throw new BadRequestException("invoice is not valid at row " + currentRow);
                 }
-                if (productTypeCell == null 
-                    || productTypeCell.getCellType() != CellType.STRING
-                    || productTypeCell.getStringCellValue() == null
-                    || productTypeCell.getStringCellValue().isEmpty()) {
-                    throw new BadRequestException("product type must be a string at row " + currentRow);
+                try {
+                    productType = ProductType.fromString(productTypeCell.getStringCellValue().trim());
+                } catch (Exception e) {
+                    throw new BadRequestException("product type is not valid at row " + currentRow);
                 }
-                if (supplierCdCell == null 
-                    || supplierCdCell.getCellType() != CellType.STRING
-                    || supplierCdCell.getStringCellValue() == null
-                    || supplierCdCell.getStringCellValue().isEmpty()) {
-                    throw new BadRequestException("supplier cd must be a string at row " + currentRow);
+                try {
+                    supplierCd = SupplierCd.fromCode(supplierCdCell.getStringCellValue().trim());
+                } catch(Exception e) {
+                    throw new BadRequestException("supplier cd is not valid at row " + currentRow);
                 }
-                if (receiveDateCell == null 
-                    || receiveDateCell.getCellType() != CellType.NUMERIC
-                    || !DateUtil.isCellDateFormatted(receiveDateCell)) {
-                    throw new BadRequestException("receive date must be a date at row " + currentRow);
+                try {
+                    receiveDate = receiveDateCell.getLocalDateTimeCellValue();
+                    if (receiveDate == null) {
+                        throw new Exception();
+                    }
+                } catch (Exception e) {
+                    throw new BadRequestException("receive date is not valid at row " + currentRow);
                 }
-                if (statusCell == null
-                    || statusCell.getCellType() != CellType.NUMERIC
-                    || (statusCell.getNumericCellValue() < 0 && statusCell.getNumericCellValue() > 2)) {
-                    throw new BadRequestException("status must be a number and between [0, 2] at row " + currentRow);
+                try {
+                    status = OrderStatus.fromValue((long) statusCell.getNumericCellValue());
+                } catch (Exception e) {
+                    throw new BadRequestException("status is not valid at row " + currentRow);
                 }
-                if (quantityCell == null 
-                    || quantityCell.getCellType() != CellType.NUMERIC
-                    || quantityCell.getNumericCellValue() < 0) {
-                    throw new BadRequestException("quantity must be a positive number at row " + currentRow);
+                try {
+                    quantity = (long) quantityCell.getNumericCellValue();
+                    if (quantity < 0) {
+                        throw new Exception();
+                    }
+                } catch(Exception e) {
+                    throw new BadRequestException("quantity is not valid at row " + currentRow);
                 }
-                Optional<InboundEntity> existingInbound = this.inboundRepository.findByInvoice(invoiceCell.getStringCellValue().trim());
+                Optional<InboundEntity> existingInbound = this.inboundRepository.findByInvoice(invoice);
                 if (existingInbound.isPresent()) {
-                    throw new BadRequestException("invoice " + invoiceCell.getStringCellValue().trim() + " already exists at row " + currentRow);
+                    throw new BadRequestException("invoice " + (long) invoiceCell.getNumericCellValue() + " already exists at row " + currentRow);
                 }
                 InboundEntity newInbound = InboundEntity.builder()
-                    .invoice(invoiceCell.getStringCellValue().trim())
-                    .productType(ProductType.fromString(productTypeCell.getStringCellValue().trim()))
-                    .supplierCd(SupplierCd.fromCode(supplierCdCell.getStringCellValue().trim()))
-                    .receiveDate(receiveDateCell.getLocalDateTimeCellValue())
-                    .status(OrderStatus.fromValue((long) statusCell.getNumericCellValue()))
-                    .quantity((long) quantityCell.getNumericCellValue())
+                    .invoice(invoice)
+                    .productType(productType)
+                    .supplierCd(supplierCd)
+                    .receiveDate(receiveDate)
+                    .status(status)
+                    .quantity(quantity)
                     .user(user)
                     .build();
                 this.inboundRepository.save(newInbound);
             }
         } catch (Exception e) {
+            if (e instanceof BadRequestException) {
+                throw (BadRequestException) e;
+            }
             throw new RuntimeException(e.getMessage());
         }
         return ImportInboundDataResponse.builder().message("success").build();
